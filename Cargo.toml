@@ -1,0 +1,14 @@
+[package]
+name = "gateconvert"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "gateconvert"
+path = "src/main.rs"
+
+[dependencies]
+gatesim = { version="0.1.0", path="../gatesim" }
