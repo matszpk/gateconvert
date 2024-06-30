@@ -20,6 +20,7 @@ struct Cli {
 struct FromCNF {
     #[clap(help = "Set CNF filename")]
     cnf: PathBuf,
+    circuit: PathBuf,
 }
 
 #[derive(Parser)]
@@ -40,7 +41,17 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::FromCNF(from_cnf) => {}
+        Commands::FromCNF(from_cnf) => {
+            let circuit = {
+                let mut cnf_file = File::open(from_cnf.cnf).unwrap();
+                cnf::from_cnf(&mut cnf_file).unwrap()
+            };
+            fs::write(
+                from_cnf.circuit,
+                FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
+            )
+            .unwrap();
+        }
         Commands::ToCNF(to_cnf) => {
             let circuit =
                 Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit).unwrap()).unwrap();

@@ -1,12 +1,12 @@
 use cnfgen::writer::{CNFError, CNFWriter};
+use flussab_cnf::cnf;
 use gatesim::*;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::Path;
 
 fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
     use cnfgen::boolvar::*;
-    use cnfgen::dynintvar::*;
     assert_eq!(circuit.outputs().len(), 1);
     let mut out_exprs = (0..circuit.input_len())
         .map(|_| BoolVarSys::var())
@@ -41,4 +41,45 @@ fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFE
 pub fn to_cnf(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
     use cnfgen::boolvar::*;
     callsys(|| to_cnf_int(circuit, out))
+}
+
+pub fn from_cnf_int(
+    parser: &mut cnf::Parser<isize>,
+) -> Result<Circuit<usize>, flussab_cnf::ParseError> {
+    use gategen::boolvar::*;
+    let hdr = parser.header().unwrap();
+    let mut vars = (0..hdr.var_count)
+        .map(|_| BoolVarSys::var())
+        .collect::<Vec<_>>();
+    let mut clauses = BoolVarSys::from(true);
+    loop {
+        match parser.next_clause() {
+            Ok(Some(clause)) => {
+                let mut clause = clause.into_iter().fold(BoolVarSys::from(false), |a, l| {
+                    let l = if *l > 0 {
+                        vars[usize::try_from(*l).unwrap() - 1].clone()
+                    } else if *l < 0 {
+                        !&vars[usize::try_from(-*l).unwrap() - 1]
+                    } else {
+                        panic!("Unexpected 0");
+                    };
+                    a | l
+                });
+                clauses &= clause;
+            }
+            Ok(None) => {
+                break;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+    Ok(clauses.to_translated_circuit(vars.into_iter()))
+}
+
+pub fn from_cnf(input: &mut impl Read) -> Result<Circuit<usize>, flussab_cnf::ParseError> {
+    use gategen::boolvar::*;
+    let mut parser = cnf::Parser::<isize>::from_read(input, cnf::Config::default())?;
+    callsys(|| from_cnf_int(&mut parser))
 }
