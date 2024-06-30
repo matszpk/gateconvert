@@ -1,10 +1,12 @@
 //mod verilog;
-use gateconvert::vcircuit;
-use gateconvert::VNegs;
+use gateconvert::cnf;
 
 use clap::{Parser, Subcommand};
+use gatesim::*;
 
+use std::fs::{self, File};
 use std::path::PathBuf;
+use std::str::FromStr;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -24,6 +26,7 @@ struct FromCNF {
 struct ToCNF {
     #[clap(help = "Set circuit filename")]
     circuit: PathBuf,
+    cnf: PathBuf,
 }
 
 #[derive(Subcommand)]
@@ -37,9 +40,12 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::FromCNF(from_cnf) => {
-        }
+        Commands::FromCNF(from_cnf) => {}
         Commands::ToCNF(to_cnf) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_cnf.cnf).unwrap();
+            cnf::to_cnf(&circuit, &mut file).unwrap();
         }
     }
 }
