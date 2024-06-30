@@ -7,3 +7,4 @@ pub enum VNegs {
 
 pub mod vbinopcircuit;
 pub mod vcircuit;
+//pub mod cnf;
