@@ -21,11 +21,15 @@ pub fn to_aiger(
         .map(|x| 2 * (input_len - state_len + x) + 2)
         .chain((0..input_len - state_len).map(|x| 2 * x + 2))
         .collect::<Vec<_>>();
-    let mut var_index = 2 * input_len + 2;
+    let mut var_index = input_len;
     let mut and_gate_count = 0;
     for g in circuit.gates() {
-        wires2lits.push(2 * var_index);
-        let count = if g.func == GateFunc::Xor { 3 } else { 1 };
+        let (count, v) = if g.func == GateFunc::Xor {
+            (3, var_index + 2)
+        } else {
+            (1, var_index)
+        };
+        wires2lits.push(2 * v + 2);
         and_gate_count += count;
         var_index += count;
     }
