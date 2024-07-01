@@ -7,8 +7,15 @@ fn to_aiger_ascii_helper(circuit: Circuit<usize>, state_len: usize) -> String {
     String::from_utf8(out).unwrap()
 }
 
+fn to_aiger_bin_helper(circuit: Circuit<usize>, state_len: usize) -> Vec<u8> {
+    let mut out = vec![];
+    aiger::to_aiger(&circuit, state_len, &mut out, true).unwrap();
+    out
+}
+
 #[test]
 fn test_to_aiger() {
+    // ascii
     assert_eq!(
         "aag 0 0 0 0 0\n",
         to_aiger_ascii_helper(Circuit::new(0, [], []).unwrap(), 0).as_str()
@@ -113,5 +120,91 @@ fn test_to_aiger() {
             0
         )
         .as_str()
+    );
+
+    // binary mode
+    assert_eq!(
+        b"aig 0 0 0 0 0\n",
+        to_aiger_bin_helper(Circuit::new(0, [], []).unwrap(), 0).as_slice()
+    );
+    assert_eq!(
+        &[
+            97, 105, 103, 32, 56, 32, 50, 32, 48, 32, 56, 32, 54, 10, 54, 10, 56, 10, 49, 48, 10,
+            49, 54, 10, 55, 10, 57, 10, 49, 49, 10, 49, 55, 10, 2, 2, 3, 2, 5, 3, 8, 2, 9, 2, 1, 2
+        ],
+        to_aiger_bin_helper(
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(0, 1),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_xor(0, 1),
+                ],
+                [
+                    (2, false),
+                    (3, false),
+                    (4, false),
+                    (5, false),
+                    (2, true),
+                    (3, true),
+                    (4, true),
+                    (5, true),
+                ]
+            )
+            .unwrap(),
+            0
+        )
+        .as_slice()
+    );
+    assert_eq!(
+        &[
+            97, 105, 103, 32, 49, 49, 32, 50, 32, 51, 32, 49, 32, 54, 10, 49, 51, 10, 49, 52, 10,
+            49, 54, 10, 50, 51, 10, 4, 2, 3, 8, 5, 5, 10, 4, 11, 4, 1, 2
+        ],
+        to_aiger_bin_helper(
+            Circuit::new(
+                5,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(2, 3),
+                    Gate::new_nimpl(0, 2),
+                    Gate::new_xor(1, 4),
+                ],
+                [(5, true), (6, false), (7, false), (8, true)]
+            )
+            .unwrap(),
+            3
+        )
+        .as_slice()
+    );
+    assert_eq!(
+        &[
+            97, 105, 103, 32, 49, 57, 32, 52, 32, 48, 32, 53, 32, 49, 53, 10, 49, 48, 10, 50, 50,
+            10, 51, 48, 10, 51, 50, 10, 51, 57, 10, 4, 4, 6, 2, 6, 6, 8, 4, 4, 2, 5, 2, 1, 2, 10,
+            2, 2, 8, 3, 8, 1, 2, 8, 8, 4, 8, 5, 8, 1, 2
+        ],
+        to_aiger_bin_helper(
+            Circuit::new(
+                4,
+                [
+                    Gate::new_and(0, 2),
+                    Gate::new_and(1, 2),
+                    Gate::new_and(0, 3),
+                    Gate::new_and(1, 3),
+                    // add a1*b0 + a0*b1
+                    Gate::new_xor(5, 6),
+                    Gate::new_and(5, 6),
+                    // add c(a1*b0 + a0*b1) + a1*b1
+                    Gate::new_xor(7, 9),
+                    Gate::new_and(7, 9),
+                    Gate::new_xor(8, 10),
+                ],
+                [(4, false), (8, false), (10, false), (11, false), (12, true)],
+            )
+            .unwrap(),
+            0
+        )
+        .as_slice()
     );
 }
