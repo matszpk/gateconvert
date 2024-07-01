@@ -1,5 +1,5 @@
 //mod verilog;
-use gateconvert::cnf;
+use gateconvert::*;
 
 use clap::{Parser, Subcommand};
 use gatesim::*;
@@ -20,13 +20,17 @@ struct Cli {
 struct FromCNF {
     #[clap(help = "Set CNF filename")]
     cnf: PathBuf,
+    #[clap(help = "Set output circuit filename")]
     circuit: PathBuf,
+    #[clap(help = "Set output assign map filename")]
+    assign_map: Option<PathBuf>,
 }
 
 #[derive(Parser)]
 struct ToCNF {
     #[clap(help = "Set circuit filename")]
     circuit: PathBuf,
+    #[clap(help = "Set output CNF filename")]
     cnf: PathBuf,
 }
 
@@ -42,7 +46,7 @@ fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::FromCNF(from_cnf) => {
-            let circuit = {
+            let (circuit, map) = {
                 let mut cnf_file = File::open(from_cnf.cnf).unwrap();
                 cnf::from_cnf(&mut cnf_file).unwrap()
             };
@@ -51,6 +55,9 @@ fn main() {
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
             )
             .unwrap();
+            if let Some(map_name) = from_cnf.assign_map {
+                fs::write(map_name, map_to_string(&map)).unwrap();
+            }
         }
         Commands::ToCNF(to_cnf) => {
             let circuit =

@@ -45,7 +45,7 @@ pub fn to_cnf(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFE
 
 pub fn from_cnf_int(
     parser: &mut cnf::Parser<isize>,
-) -> Result<Circuit<usize>, flussab_cnf::ParseError> {
+) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
     use gategen::boolvar::*;
     let hdr = parser.header().unwrap();
     let mut vars = (0..hdr.var_count)
@@ -75,10 +75,12 @@ pub fn from_cnf_int(
             }
         }
     }
-    Ok(clauses.to_translated_circuit(vars.into_iter()))
+    Ok(clauses.to_translated_circuit_with_map(vars.into_iter()))
 }
 
-pub fn from_cnf(input: &mut impl Read) -> Result<Circuit<usize>, flussab_cnf::ParseError> {
+pub fn from_cnf(
+    input: &mut impl Read,
+) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
     use gategen::boolvar::*;
     let mut parser = cnf::Parser::<isize>::from_read(input, cnf::Config::default())?;
     callsys(|| from_cnf_int(&mut parser))
