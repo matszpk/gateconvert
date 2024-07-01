@@ -3,6 +3,7 @@ use flussab_aiger::aig::*;
 use flussab_aiger::*;
 use gatesim::*;
 
+use std::collections::HashMap;
 use std::io::{Read, Write};
 
 pub fn to_aiger(
@@ -113,6 +114,32 @@ fn from_aiger_int(
     aig: &Aig<usize>,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
     use gategen::boolvar::*;
+    let state_len = aig.latches.len();
+    let only_input_len = aig.inputs.len() + aig.latches.len();
+    // wires - input and latches initialized, rest is empty - initialized by false
+    let mut wires = (0..only_input_len)
+        .map(|_| BoolVarSys::var())
+        .chain((only_input_len..aig.max_var_index).map(|_| BoolVarSys::from(false)))
+        .collect::<Vec<_>>();
+    let wire_map = HashMap::<usize, usize>::from_iter(
+        aig.latches
+            .iter()
+            .enumerate()
+            .map(|(i, l)| ((l.state >> 1).checked_sub(1).unwrap(), i))
+            .chain(
+                aig.inputs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, input)| ((input >> 1).checked_sub(1).unwrap(), i + state_len)),
+            ),
+    );
+    #[derive(Clone)]
+    struct StackEntry {
+        way: usize,
+        node: usize,
+    };
+    let mut visited = vec![false; aig.max_var_index];
+    let mut path_visited = vec![false; aig.max_var_index];
     Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
 }
 
