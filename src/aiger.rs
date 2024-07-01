@@ -110,6 +110,8 @@ pub enum AIGERError {
     ParseError(#[from] ParseError),
     #[error("Cycles in AIGER")]
     CyclesInAIGER,
+    #[error("AIGER AndGate bad output")]
+    AndGateBadOutput,
 }
 
 fn from_aiger_int(
@@ -123,7 +125,7 @@ fn from_aiger_int(
         .map(|_| BoolVarSys::var())
         .chain((only_input_len..aig.max_var_index).map(|_| BoolVarSys::from(false)))
         .collect::<Vec<_>>();
-    let wire_map = HashMap::<usize, usize>::from_iter(
+    let mut wire_map = HashMap::<usize, usize>::from_iter(
         aig.latches
             .iter()
             .enumerate()
@@ -135,6 +137,14 @@ fn from_aiger_int(
                     .map(|(i, input)| ((input >> 1).checked_sub(1).unwrap(), i + state_len)),
             ),
     );
+    for (i, g) in aig.and_gates.iter().enumerate() {
+        let go = (g.output >> 1).checked_sub(1).unwrap();
+        if !wire_map.contains_key(&go) {
+            wire_map.insert(go, only_input_len + i);
+        } else {
+            return Err(AIGERError::AndGateBadOutput);
+        }
+    }
     #[derive(Clone)]
     struct StackEntry {
         way: usize,
