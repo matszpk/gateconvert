@@ -18,6 +18,8 @@ pub fn to_aiger(
     assert!(state_len <= input_len);
     assert!(state_len <= output_len);
     // convert to OrderedAig
+    // in circuit - states are first.
+    // in AIGER - states are next after inputs.
     let mut wires2lits = (0..state_len)
         .map(|x| 2 * (input_len - state_len + x) + 2)
         .chain((0..input_len - state_len).map(|x| 2 * x + 2))
@@ -140,10 +142,11 @@ fn from_aiger_int(
     };
     let mut visited = vec![false; aig.max_var_index];
     let mut path_visited = vec![false; aig.max_var_index];
-    let mut var_usage = vec![0u8; aig.max_var_index];
-    let mut xor_subparts = vec![false; aig.max_var_index];
-    // stage 1 - check cycles and mark XOR-subgates (if not used by other gates).
-    // stage 2 - main stage to convert AIGER to circuits - including negation propagation.
+    // stage 1 - check cycles
+    // stage 2 - main stage to convert AIGER to circuits.
+    // XOR subpart gates will be skipped - if they are part of other path then included
+    // automatically. Any negation propagation, constant assignments will be done
+    // automatically gategen.
     Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
 }
 
