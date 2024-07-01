@@ -140,6 +140,8 @@ fn from_aiger_int(
     };
     let mut visited = vec![false; aig.max_var_index];
     let mut path_visited = vec![false; aig.max_var_index];
+    let mut var_usage = vec![0u8; aig.max_var_index];
+    let mut xor_subparts = vec![false; aig.max_var_index];
     // stage 1 - check cycles and mark XOR-subgates (if not used by other gates).
     // stage 2 - main stage to convert AIGER to circuits - including negation propagation.
     Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
