@@ -34,12 +34,26 @@ struct ToCNF {
     cnf: PathBuf,
 }
 
+#[derive(Parser)]
+struct ToAIGER {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output AIGER filename")]
+    aiger: PathBuf,
+    #[clap(help = "Set state length (number of latches)")]
+    state_len: Option<usize>,
+    #[clap(short, long, help = "Set binary mode")]
+    binary: bool,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     #[clap(about = "Convert from CNF")]
     FromCNF(FromCNF),
     #[clap(about = "Convert to CNF")]
     ToCNF(ToCNF),
+    #[clap(about = "Convert to AIG")]
+    ToAIGER(ToAIGER),
 }
 
 fn main() {
@@ -64,6 +78,18 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit).unwrap()).unwrap();
             let mut file = File::create(to_cnf.cnf).unwrap();
             cnf::to_cnf(&circuit, &mut file).unwrap();
+        }
+        Commands::ToAIGER(to_aig) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_aig.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_aig.aiger).unwrap();
+            aiger::to_aiger(
+                &circuit,
+                to_aig.state_len.unwrap_or_default(),
+                &mut file,
+                to_aig.binary,
+            )
+            .unwrap();
         }
     }
 }
