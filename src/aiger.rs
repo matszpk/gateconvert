@@ -3,7 +3,7 @@ use flussab_aiger::aig::*;
 use flussab_aiger::*;
 use gatesim::*;
 
-use std::io::Write;
+use std::io::{Read, Write};
 
 pub fn to_aiger(
     circuit: &Circuit<usize>,
@@ -99,4 +99,35 @@ pub fn to_aiger(
         writer.write_ordered_aig(&ord_aig);
         writer.check_io_error()
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum AIGERError {
+    #[error("AIGER parse error {0}")]
+    ParseError(#[from] ParseError),
+    #[error("Cycles in AIGER")]
+    CyclesInAIGER,
+}
+
+fn from_aiger_int(
+    aig: &Aig<usize>,
+) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
+    use gategen::boolvar::*;
+    Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
+}
+
+// return: circuit, map for input, map for AIGER variables
+pub fn from_aiger(
+    input: &mut impl Read,
+    binmode: bool,
+) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
+    use gategen::boolvar::*;
+    let aig = if binmode {
+        let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
+        parser.parse()?
+    } else {
+        let mut parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
+        parser.parse()?.into()
+    };
+    callsys(|| from_aiger_int(&aig))
 }
