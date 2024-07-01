@@ -112,10 +112,10 @@ pub enum AIGERError {
     CyclesInAIGER,
     #[error("AndGate bad output")]
     AndGateBadOutput,
-    #[error("Latch bad output")]
-    LatchBadOutput,
-    #[error("Bad output")]
-    BadOutput,
+    #[error("Latch bad state")]
+    LatchBadState,
+    #[error("Bad input")]
+    BadInput,
 }
 
 fn from_aiger_int(
@@ -135,15 +135,15 @@ fn from_aiger_int(
         if !wire_map.contains_key(&lo) {
             wire_map.insert(lo, i);
         } else {
-            return Err(AIGERError::LatchBadOutput);
+            return Err(AIGERError::LatchBadState);
         }
     }
-    for (i, out) in aig.outputs.iter().enumerate() {
-        let oo = (out >> 1).checked_sub(1).unwrap();
-        if !wire_map.contains_key(&oo) {
-            wire_map.insert(oo, i + state_len);
+    for (i, input) in aig.inputs.iter().enumerate() {
+        let ino = (input >> 1).checked_sub(1).unwrap();
+        if !wire_map.contains_key(&ino) {
+            wire_map.insert(ino, i + state_len);
         } else {
-            return Err(AIGERError::BadOutput);
+            return Err(AIGERError::BadInput);
         }
     }
     for (i, g) in aig.and_gates.iter().enumerate() {
