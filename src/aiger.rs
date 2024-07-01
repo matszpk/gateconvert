@@ -110,8 +110,12 @@ pub enum AIGERError {
     ParseError(#[from] ParseError),
     #[error("Cycles in AIGER")]
     CyclesInAIGER,
-    #[error("AIGER AndGate bad output")]
+    #[error("AndGate bad output")]
     AndGateBadOutput,
+    #[error("Latch bad output")]
+    LatchBadOutput,
+    #[error("Bad output")]
+    BadOutput,
 }
 
 fn from_aiger_int(
@@ -125,18 +129,23 @@ fn from_aiger_int(
         .map(|_| BoolVarSys::var())
         .chain((only_input_len..aig.max_var_index).map(|_| BoolVarSys::from(false)))
         .collect::<Vec<_>>();
-    let mut wire_map = HashMap::<usize, usize>::from_iter(
-        aig.latches
-            .iter()
-            .enumerate()
-            .map(|(i, l)| ((l.state >> 1).checked_sub(1).unwrap(), i))
-            .chain(
-                aig.inputs
-                    .iter()
-                    .enumerate()
-                    .map(|(i, input)| ((input >> 1).checked_sub(1).unwrap(), i + state_len)),
-            ),
-    );
+    let mut wire_map = HashMap::<usize, usize>::new();
+    for (i, l) in aig.latches.iter().enumerate() {
+        let lo = (l.state >> 1).checked_sub(1).unwrap();
+        if !wire_map.contains_key(&lo) {
+            wire_map.insert(lo, i);
+        } else {
+            return Err(AIGERError::LatchBadOutput);
+        }
+    }
+    for (i, out) in aig.outputs.iter().enumerate() {
+        let oo = (out >> 1).checked_sub(1).unwrap();
+        if !wire_map.contains_key(&oo) {
+            wire_map.insert(oo, i + state_len);
+        } else {
+            return Err(AIGERError::BadOutput);
+        }
+    }
     for (i, g) in aig.and_gates.iter().enumerate() {
         let go = (g.output >> 1).checked_sub(1).unwrap();
         if !wire_map.contains_key(&go) {
