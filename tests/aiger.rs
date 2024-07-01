@@ -43,4 +43,25 @@ fn test_to_aiger() {
         )
         .as_str()
     );
+    assert_eq!(
+        concat!(
+            "aag 11 2 3 1 6\n2\n4\n6 13\n8 14\n10 16\n23\n",
+            "12 6 8\n14 11 3\n16 6 11\n18 8 4\n20 9 5\n22 19 21\n"
+        ),
+        to_aiger_ascii_helper(
+            Circuit::new(
+                5,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(2, 3),
+                    Gate::new_nimpl(0, 2),
+                    Gate::new_xor(1, 4),
+                ],
+                [(5, true), (6, false), (7, false), (8, true)]
+            )
+            .unwrap(),
+            3
+        )
+        .as_str()
+    );
 }

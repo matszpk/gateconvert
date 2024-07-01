@@ -75,7 +75,7 @@ pub fn to_aiger(
         latches: (0..state_len)
             .map(|i| OrderedLatch {
                 next_state: wires2lits[outputs[i].0] + usize::from(outputs[i].1),
-                initialization: None,
+                initialization: Some(false),
             })
             .collect::<Vec<_>>(),
         outputs: (state_len..output_len)
