@@ -142,8 +142,6 @@ fn from_aiger_int(
     };
     let mut visited = vec![false; aig.max_var_index];
     let mut path_visited = vec![false; aig.max_var_index];
-    // stage 1 - check cycles
-    // stage 2 - main stage to convert AIGER to circuits.
     // XOR subpart gates will be skipped - if they are part of other path then included
     // automatically. Any negation propagation, constant assignments will be done
     // automatically gategen.
