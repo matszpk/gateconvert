@@ -16,3 +16,4 @@ gategen = { version="0.1.0", path="../gategen" }
 clap = { version = "4.5.3", features = ["derive"] }
 cnfgen = "0.4.0"
 flussab-cnf = "0.3"
+flussab-aiger = "0.1"
