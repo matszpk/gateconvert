@@ -3,7 +3,6 @@ use flussab_cnf::cnf;
 use gatesim::*;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
 
 fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
     use cnfgen::boolvar::*;

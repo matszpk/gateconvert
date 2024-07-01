@@ -5,6 +5,7 @@ pub enum VNegs {
     NegOutput,
 }
 
+pub mod aiger;
 pub mod cnf;
 pub mod vbinopcircuit;
 pub mod vcircuit;

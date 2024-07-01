@@ -17,3 +17,4 @@ clap = { version = "4.5.3", features = ["derive"] }
 cnfgen = "0.4.0"
 flussab-cnf = "0.3"
 flussab-aiger = "0.1"
+flussab = "0.3.1"
