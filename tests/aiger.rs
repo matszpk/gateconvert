@@ -995,15 +995,12 @@ fn test_from_aiger() {
             "6 2 4\n8 1 1\n10 1 0\n12 0 1\n14 0 1\n16 13 15\n"
         )),
     );
-    // with acyclic graph - many usages
+    // with acyclic graph - many usages - with constants and no mapping
     assert_eq!(
         Ok((
             Circuit::new(
                 2,
-                [
-                    Gate::new_and(0, 1),
-                    Gate::new_nimpl(2, 0),
-                ],
+                [Gate::new_and(0, 1), Gate::new_nimpl(2, 0),],
                 [(3, true), (3, false)],
             )
             .unwrap(),
