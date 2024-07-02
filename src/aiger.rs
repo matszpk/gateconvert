@@ -154,18 +154,16 @@ fn from_aiger_int(
             return Err(AIGERError::AndGateBadOutput);
         }
     }
-    // expression resolve: (expr, and_gate)
-    let mut expr_resolve = |l| {
+    let and_resolve = |l: usize| {
         let lpos = l & !1;
         if l < 2 {
-            (BoolVarSys::from(l == 1), None)
+            None
         } else if let Some(x) = expr_map.get(&lpos) {
-            let and_gate = if *x >= all_input_len {
-                Some((*x, &aig.and_gates[*x - all_input_len]))
+            if *x >= all_input_len {
+                Some((*x - all_input_len, &aig.and_gates[*x - all_input_len]))
             } else {
                 None
-            };
-            (&exprs[expr_map[x]] ^ ((l & 1) != 0), and_gate)
+            }
         } else {
             panic!("Unexpected literal");
         }
@@ -191,13 +189,17 @@ fn from_aiger_int(
         stack.push(StackEntry { way: 0, lit: *ol });
         while !stack.is_empty() {
             let mut top = stack.last_mut().unwrap();
-            let (expr, and_gate) = expr_resolve(top.lit);
+            let and_gate = and_resolve(top.lit);
             let avar = top.lit >> 1;
 
             if let Some((and_idx, and_gate)) = and_gate {
                 // check if XOR or Equal
-                let (gi0expr, gi0and) = expr_resolve(and_gate.inputs[0]);
-                let (gi1expr, gi1and) = expr_resolve(and_gate.inputs[1]);
+                let gi0and = and_resolve(and_gate.inputs[0]);
+                let gi1and = and_resolve(and_gate.inputs[1]);
+                // and_data - default data for AND gate
+                let and_data = (and_gate.inputs[0], and_gate.inputs[1], false);
+                // check and resolve XOR construction:
+                // xor(a,b) = and(!and(a,b), !and(!a, !b))
                 let (gi0l, gi1l, is_xor) =
                     if (and_gate.inputs[0] & 1) != 0 && (and_gate.inputs[1] & 1) != 0 {
                         if let Some((_, gi0and)) = gi0and {
@@ -211,16 +213,16 @@ fn from_aiger_int(
                                     // if XOR
                                     (gi0and.inputs[0], gi0and.inputs[1], true)
                                 } else {
-                                    (and_gate.inputs[0], and_gate.inputs[1], false)
+                                    and_data
                                 }
                             } else {
-                                (and_gate.inputs[0], and_gate.inputs[1], false)
+                                and_data
                             }
                         } else {
-                            (and_gate.inputs[0], and_gate.inputs[1], false)
+                            and_data
                         }
                     } else {
-                        (and_gate.inputs[0], and_gate.inputs[1], false)
+                        and_data
                     };
 
                 let way = top.way;
@@ -237,16 +239,35 @@ fn from_aiger_int(
                         stack.pop();
                         continue;
                     }
+                    // first argument
+                    top.way += 1;
                     stack.push(StackEntry { way: 0, lit: gi0l });
                 } else if way == 1 {
+                    // second argument
+                    top.way += 1;
                     stack.push(StackEntry { way: 0, lit: gi1l });
                 } else {
-                    // let gexpr = if is_xor {
-                    //     gi0expr ^ gi1expr
-                    // } else {
-                    //     expr
-                    // };
-                    // exprs
+                    // get expressions for gate arguments
+                    let gi0expr = if gi0l < 2 {
+                        BoolVarSys::from(gi0l == 1)
+                    } else if let Some(x) = expr_map.get(&(gi0l & !1)) {
+                        &exprs[expr_map[x]] ^ ((gi0l & 1) != 0)
+                    } else {
+                        panic!("Unexpected literal");
+                    };
+                    let gi1expr = if gi1l < 2 {
+                        BoolVarSys::from(gi1l == 1)
+                    } else if let Some(x) = expr_map.get(&(gi1l & !1)) {
+                        &exprs[expr_map[x]] ^ ((gi1l & 1) != 0)
+                    } else {
+                        panic!("Unexpected literal");
+                    };
+                    // set expression to exprs
+                    exprs[and_idx] = if is_xor {
+                        gi0expr ^ gi1expr
+                    } else {
+                        gi0expr & gi1expr
+                    };
                     path_visited[avar - 1] = false;
                     stack.pop();
                 }
