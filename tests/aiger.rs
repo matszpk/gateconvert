@@ -262,6 +262,46 @@ fn test_from_aiger() {
             "6 2 4\n8 3 5\n10 2 5\n12 2 4\n14 3 5\n16 13 15\n"
         )),
     );
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(0, 1),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_xor(1, 0),
+                ],
+                [
+                    (2, false),
+                    (3, false),
+                    (4, false),
+                    (5, false),
+                    (2, true),
+                    (3, true),
+                    (4, true),
+                    (5, true),
+                ]
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (16, AIGEREntry::Var(5, false)),
+                (7, AIGEREntry::Var(2, true)),
+                (9, AIGEREntry::Var(3, true)),
+                (11, AIGEREntry::Var(4, true)),
+                (17, AIGEREntry::Var(5, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(concat!(
+            "aag 8 2 0 8 6\n2\n4\n6\n8\n10\n16\n7\n9\n11\n17\n",
+            "6 2 4\n8 3 5\n10 2 5\n12 4 2\n14 3 5\n16 13 15\n"
+        )),
+    );
     // simplified version of first testcase (no duplicates)
     assert_eq!(
         Ok((
@@ -428,6 +468,49 @@ fn test_from_aiger() {
         from_aiger_ascii_helper(concat!(
             "aag 8 2 0 8 6\n2\n4\n6\n8\n10\n16\n7\n9\n11\n17\n",
             "6 2 4\n8 3 5\n10 2 5\n12 2 5\n14 3 4\n16 13 14\n"
+        )),
+    );
+    // modified version of first testcase. changed XOR to other
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(0, 1),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(5, 6),
+                ],
+                [
+                    (2, false),
+                    (3, false),
+                    (4, false),
+                    (7, false),
+                    (2, true),
+                    (3, true),
+                    (4, true),
+                    (7, true),
+                ]
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (16, AIGEREntry::Var(7, false)),
+                (7, AIGEREntry::Var(2, true)),
+                (9, AIGEREntry::Var(3, true)),
+                (11, AIGEREntry::Var(4, true)),
+                (17, AIGEREntry::Var(7, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(concat!(
+            "aag 8 2 0 8 6\n2\n4\n6\n8\n10\n16\n7\n9\n11\n17\n",
+            "6 2 4\n8 3 5\n10 2 5\n12 2 5\n14 2 4\n16 13 15\n"
         )),
     );
     // latches
