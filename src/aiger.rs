@@ -160,7 +160,7 @@ fn from_aiger_int(
     let mut expr_map = HashMap::<usize, usize>::new();
     for (i, l) in aig.latches.iter().enumerate() {
         let lo = l.state;
-        if !expr_map.contains_key(&lo) {
+        if (lo & 1) == 0 && !expr_map.contains_key(&lo) {
             expr_map.insert(lo, i);
         } else {
             return Err(AIGERError::LatchBadState);
@@ -168,7 +168,7 @@ fn from_aiger_int(
     }
     for (i, input) in aig.inputs.iter().enumerate() {
         let ino = *input;
-        if !expr_map.contains_key(&ino) {
+        if (ino & 1) == 0 && !expr_map.contains_key(&ino) {
             expr_map.insert(ino, i + state_len);
         } else {
             return Err(AIGERError::BadInput);
@@ -176,7 +176,7 @@ fn from_aiger_int(
     }
     for (i, g) in aig.and_gates.iter().enumerate() {
         let go = g.output;
-        if !expr_map.contains_key(&go) {
+        if (go & 1) == 0 && !expr_map.contains_key(&go) {
             expr_map.insert(go, all_input_len + i);
         } else {
             return Err(AIGERError::AndGateBadOutput);
