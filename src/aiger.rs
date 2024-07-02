@@ -161,7 +161,7 @@ fn from_aiger_int(
             (BoolVarSys::from(l == 1), None)
         } else if let Some(x) = expr_map.get(&lpos) {
             let and_gate = if *x >= all_input_len {
-                Some(aig.and_gates[*x - all_input_len])
+                Some((*x, &aig.and_gates[*x - all_input_len]))
             } else {
                 None
             };
@@ -194,14 +194,14 @@ fn from_aiger_int(
             let (expr, and_gate) = expr_resolve(top.lit);
             let avar = top.lit >> 1;
 
-            if let Some(and_gate) = and_gate {
+            if let Some((and_idx, and_gate)) = and_gate {
                 // check if XOR or Equal
                 let (gi0expr, gi0and) = expr_resolve(and_gate.inputs[0]);
                 let (gi1expr, gi1and) = expr_resolve(and_gate.inputs[1]);
-                let (expr, gate, is_xor) =
+                let (gi0l, gi1l, is_xor) =
                     if (and_gate.inputs[0] & 1) != 0 && (and_gate.inputs[1] & 1) != 0 {
-                        if let Some(gi0and) = gi0and {
-                            if let Some(gi1and) = gi1and {
+                        if let Some((_, gi0and)) = gi0and {
+                            if let Some((_, gi1and)) = gi1and {
                                 // compare results
                                 if (gi0and.inputs[0] == (gi1and.inputs[0] ^ 1)
                                     && gi0and.inputs[1] == (gi1and.inputs[1] ^ 1))
@@ -209,18 +209,18 @@ fn from_aiger_int(
                                         && gi0and.inputs[1] == (gi1and.inputs[0] ^ 1))
                                 {
                                     // if XOR
-                                    ((gi0expr ^ gi1expr), and_gate, true)
+                                    (gi0and.inputs[0], gi0and.inputs[1], true)
                                 } else {
-                                    (expr, and_gate, false)
+                                    (and_gate.inputs[0], and_gate.inputs[1], false)
                                 }
                             } else {
-                                (expr, and_gate, false)
+                                (and_gate.inputs[0], and_gate.inputs[1], false)
                             }
                         } else {
-                            (expr, and_gate, false)
+                            (and_gate.inputs[0], and_gate.inputs[1], false)
                         }
                     } else {
-                        (expr, and_gate, false)
+                        (and_gate.inputs[0], and_gate.inputs[1], false)
                     };
 
                 let way = top.way;
@@ -237,8 +237,16 @@ fn from_aiger_int(
                         stack.pop();
                         continue;
                     }
+                    stack.push(StackEntry { way: 0, lit: gi0l });
                 } else if way == 1 {
+                    stack.push(StackEntry { way: 0, lit: gi1l });
                 } else {
+                    // let gexpr = if is_xor {
+                    //     gi0expr ^ gi1expr
+                    // } else {
+                    //     expr
+                    // };
+                    // exprs
                     path_visited[avar - 1] = false;
                     stack.pop();
                 }
