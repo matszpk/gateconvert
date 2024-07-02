@@ -302,6 +302,22 @@ fn test_from_aiger() {
             "6 2 4\n8 3 5\n10 2 5\n12 4 2\n14 3 5\n16 13 15\n"
         )),
     );
+    // first testcase with bad input
+    assert_eq!(
+        Err("Bad input".to_string()),
+        from_aiger_ascii_helper(concat!(
+            "aag 8 2 0 8 6\n2\n2\n6\n8\n10\n16\n7\n9\n11\n17\n",
+            "6 2 4\n8 3 5\n10 2 5\n12 2 4\n14 3 5\n16 13 15\n"
+        )),
+    );
+    // first testcase with bad and gate
+    assert_eq!(
+        Err("AndGate bad output".to_string()),
+        from_aiger_ascii_helper(concat!(
+            "aag 8 2 0 8 6\n2\n4\n6\n8\n10\n16\n7\n9\n11\n17\n",
+            "6 2 4\n8 3 5\n10 2 5\n14 2 4\n14 3 5\n16 13 15\n"
+        )),
+    );
     // simplified version of first testcase (no duplicates)
     assert_eq!(
         Ok((
@@ -541,6 +557,13 @@ fn test_from_aiger() {
         )),
         from_aiger_ascii_helper(concat!(
             "aag 11 2 3 1 6\n2\n4\n6 13\n8 14\n10 16\n23\n",
+            "12 6 8\n14 11 3\n16 6 11\n18 8 4\n20 9 5\n22 19 21\n"
+        )),
+    );
+    assert_eq!(
+        Err("Latch bad state".to_string()),
+        from_aiger_ascii_helper(concat!(
+            "aag 11 2 3 1 6\n2\n4\n6 13\n8 14\n6 16\n23\n",
             "12 6 8\n14 11 3\n16 6 11\n18 8 4\n20 9 5\n22 19 21\n"
         )),
     );
