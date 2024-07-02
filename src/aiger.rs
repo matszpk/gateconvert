@@ -149,6 +149,7 @@ fn from_aiger_int(
 ) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     use gategen::dynintvar::*;
+    println!("Aiger: {:?}", aig);
     let state_len = aig.latches.len();
     let all_input_len = aig.inputs.len() + aig.latches.len();
     // exprs - input and latches initialized, rest is empty - initialized by false
@@ -181,6 +182,7 @@ fn from_aiger_int(
             return Err(AIGERError::AndGateBadOutput);
         }
     }
+    println!("ExprMap: {:?}", expr_map);
     let and_resolve = |l: usize| {
         let lpos = l & !1;
         if l < 2 {
@@ -214,10 +216,12 @@ fn from_aiger_int(
         .collect::<Vec<_>>();
     for (i, ol) in outputs.iter().enumerate() {
         stack.push(StackEntry { way: 0, lit: *ol });
+        println!("Output: {} {}", i, ol);
         while !stack.is_empty() {
             let mut top = stack.last_mut().unwrap();
             let and_gate = and_resolve(top.lit);
             let avar = top.lit >> 1;
+            println!("  StackTop: {} {}", top.way, top.lit);
 
             if let Some((and_idx, and_gate)) = and_gate {
                 // check if XOR or Equal
@@ -278,19 +282,20 @@ fn from_aiger_int(
                     let gi0expr = if gi0l < 2 {
                         BoolVarSys::from(gi0l == 1)
                     } else if let Some(x) = expr_map.get(&(gi0l & !1)) {
-                        &exprs[expr_map[x]] ^ ((gi0l & 1) != 0)
+                        &exprs[*x] ^ ((gi0l & 1) != 0)
                     } else {
                         panic!("Unexpected literal");
                     };
                     let gi1expr = if gi1l < 2 {
                         BoolVarSys::from(gi1l == 1)
                     } else if let Some(x) = expr_map.get(&(gi1l & !1)) {
-                        &exprs[expr_map[x]] ^ ((gi1l & 1) != 0)
+                        &exprs[*x] ^ ((gi1l & 1) != 0)
                     } else {
                         panic!("Unexpected literal");
                     };
                     // set expression to exprs
-                    exprs[and_idx] = if is_xor {
+                    println!("  ANDIdx {}", and_idx + all_input_len);
+                    exprs[all_input_len + and_idx] = if is_xor {
                         gi0expr ^ gi1expr
                     } else {
                         gi0expr & gi1expr
@@ -316,7 +321,7 @@ fn from_aiger_int(
             let expr = if *l < 2 {
                 BoolVarSys::from(*l == 1)
             } else if let Some(x) = expr_map.get(&lpos) {
-                &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
+                &exprs[*x] ^ ((l & 1) != 0)
             } else {
                 panic!("Unexpected literal");
             };
@@ -329,23 +334,29 @@ fn from_aiger_int(
             }
         })
         .collect::<Vec<_>>();
-    let outint = if !outputs.is_empty() {
-        UDynVarSys::from_iter(outputs.iter().filter_map(|l| {
+    println!("Output: {:?}", outputs);
+    let filtered_outputs = outputs
+        .iter()
+        .filter_map(|l| {
             let lpos = *l & !1;
             let expr = if *l < 2 {
                 BoolVarSys::from(*l == 1)
             } else if let Some(x) = expr_map.get(&lpos) {
-                &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
+                &exprs[*x] ^ ((l & 1) != 0)
             } else {
                 panic!("Unexpected literal");
             };
             // just choose only not constant expressions
-            if expr.varlit().is_some() {
+            if expr.value().is_none() {
                 Some(expr)
             } else {
                 None
             }
-        }))
+        })
+        .collect::<Vec<_>>();
+    println!("FiltOut: {:?}", filtered_outputs);
+    let outint = if !filtered_outputs.is_empty() {
+        UDynVarSys::from_iter(filtered_outputs.into_iter())
     } else {
         UDynVarSys::var(0)
     };
