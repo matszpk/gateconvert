@@ -262,4 +262,65 @@ fn test_from_aiger() {
             "6 2 4\n8 3 5\n10 2 5\n12 2 4\n14 3 5\n16 13 15\n"
         )),
     );
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                4,
+                [
+                    Gate::new_and(0, 2),
+                    Gate::new_and(1, 2),
+                    Gate::new_and(0, 3),
+                    // add a1*b0 + a0*b1
+                    Gate::new_xor(5, 6),
+                    Gate::new_and(1, 3),
+                    Gate::new_and(5, 6),
+                    // add c(a1*b0 + a0*b1) + a1*b1
+                    Gate::new_xor(8, 9),
+                    Gate::new_and(8, 9),
+                    Gate::new_xor(7, 10),
+                ],
+                [(4, false), (7, false), (10, false), (11, false), (12, true)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (22, AIGEREntry::Var(7, false)),
+                (30, AIGEREntry::Var(10, false)),
+                (32, AIGEREntry::Var(11, false)),
+                (39, AIGEREntry::Var(12, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 19 4 0 5 15
+2
+4
+6
+8
+10
+22
+30
+32
+39
+10 2 6
+12 4 6
+14 2 8
+16 4 8
+18 12 14
+20 13 15
+22 19 21
+24 12 14
+26 16 24
+28 17 25
+30 27 29
+32 16 24
+34 22 30
+36 23 31
+38 35 37
+"##
+        ),
+    );
 }
