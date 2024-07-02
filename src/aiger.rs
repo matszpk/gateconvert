@@ -4,6 +4,7 @@ use flussab_aiger::*;
 use gatesim::*;
 
 use std::collections::HashMap;
+use std::fmt::{self, Display};
 use std::io::{Read, Write};
 
 pub fn to_aiger(
@@ -123,6 +124,24 @@ pub enum AIGEREntry {
     NoMap,
     Value(bool),
     Var(usize, bool), // (circuit wire index, negation)
+}
+
+impl Display for AIGEREntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AIGEREntry::NoMap => write!(f, "-"),
+            AIGEREntry::Value(v) => write!(f, "{}", v),
+            AIGEREntry::Var(v, n) => write!(f, "{}{}", if *n { "!" } else { "" }, v),
+        }
+    }
+}
+
+pub fn aiger_map_to_string<T: ToString>(map: &[(usize, AIGEREntry)]) -> String {
+    map.into_iter()
+        .map(|(l, x)| format!("{} {}", l, x))
+        .collect::<Vec<_>>()
+        .join(" ")
+        + "\n"
 }
 
 fn from_aiger_int(
