@@ -121,8 +121,8 @@ pub enum AIGERError {
 
 #[derive(Clone, Copy)]
 pub enum AIGEREntry {
-    NoMap,
-    Value(bool),
+    NoMap,            // no mapping
+    Value(bool),      // boolean value
     Var(usize, bool), // (circuit wire index, negation)
 }
 
@@ -146,7 +146,7 @@ pub fn aiger_map_to_string<T: ToString>(map: &[(usize, AIGEREntry)]) -> String {
 
 fn from_aiger_int(
     aig: &Aig<usize>,
-) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<(usize, AIGEREntry)>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     use gategen::dynintvar::*;
     let state_len = aig.latches.len();
@@ -368,6 +368,7 @@ fn from_aiger_int(
             )
         })
         .chain(
+            // main next states of latches and outputs
             aiger_out_map
                 .into_iter()
                 .enumerate()
@@ -382,15 +383,15 @@ fn from_aiger_int(
                 }),
         )
         .collect::<Vec<_>>();
-    Ok((circuit, assign_map, aiger_map))
+    Ok((circuit, aiger_map))
 }
 
-// return: circuit, map for input (with values),
-// map for AIGER variables (input, latches and output)
+// return: circuit, map for AIGER variables (input, latches and output)
+// format of AIGER map: (AIGER literal, AIGER Entry)
 pub fn from_aiger(
     input: &mut impl Read,
     binmode: bool,
-) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<(usize, AIGEREntry)>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     let aig = if binmode {
         let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
