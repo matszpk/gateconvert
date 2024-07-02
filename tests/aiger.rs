@@ -523,4 +523,64 @@ fn test_from_aiger() {
 "##
         ),
     );
+    // this same as previous but without duplicates
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                4,
+                [
+                    Gate::new_and(0, 2),
+                    Gate::new_and(1, 2),
+                    Gate::new_and(0, 3),
+                    // add a1*b0 + a0*b1
+                    Gate::new_xor(5, 6),
+                    Gate::new_and(1, 3),
+                    Gate::new_and(5, 6),
+                    // add c(a1*b0 + a0*b1) + a1*b1
+                    Gate::new_xor(8, 9),
+                    Gate::new_and(8, 9),
+                    Gate::new_xor(7, 10),
+                ],
+                [(4, false), (7, false), (10, false), (11, false), (12, true)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (22, AIGEREntry::Var(7, false)),
+                (28, AIGEREntry::Var(10, false)),
+                (24, AIGEREntry::Var(11, false)),
+                (35, AIGEREntry::Var(12, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 17 4 0 5 13
+2
+4
+6
+8
+10
+22
+28
+24
+35
+10 2 6
+12 4 6
+14 2 8
+16 4 8
+18 12 14
+20 13 15
+22 19 21
+24 16 18
+26 17 19
+28 25 27
+30 22 28
+32 23 29
+34 31 33
+"##
+        ),
+    );
 }
