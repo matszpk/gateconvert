@@ -265,6 +265,36 @@ fn test_from_aiger() {
     assert_eq!(
         Ok((
             Circuit::new(
+                5,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(2, 3),
+                    Gate::new_nimpl(0, 2),
+                    Gate::new_xor(1, 4),
+                ],
+                [(5, true), (6, false), (7, false), (8, true)]
+            )
+            .unwrap(),
+            vec![
+                (6, AIGEREntry::Var(0, false)),
+                (8, AIGEREntry::Var(1, false)),
+                (10, AIGEREntry::Var(2, false)),
+                (2, AIGEREntry::Var(3, false)),
+                (4, AIGEREntry::Var(4, false)),
+                (13, AIGEREntry::Var(5, true)),
+                (14, AIGEREntry::Var(6, false)),
+                (16, AIGEREntry::Var(7, false)),
+                (23, AIGEREntry::Var(8, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(concat!(
+            "aag 11 2 3 1 6\n2\n4\n6 13\n8 14\n10 16\n23\n",
+            "12 6 8\n14 11 3\n16 6 11\n18 8 4\n20 9 5\n22 19 21\n"
+        )),
+    );
+    assert_eq!(
+        Ok((
+            Circuit::new(
                 4,
                 [
                     Gate::new_and(0, 2),
