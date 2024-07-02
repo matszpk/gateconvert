@@ -793,4 +793,86 @@ fn test_from_aiger() {
 "##
         ),
     );
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                8,
+                [
+                    Gate::new_nimpl(6, 5),
+                    Gate::new_nimpl(8, 4),
+                    Gate::new_and(7, 0),
+                    Gate::new_nimpl(0, 7),
+                    Gate::new_nimpl(10, 11),
+                    Gate::new_and(9, 12),
+                    Gate::new_and(0, 1),
+                    Gate::new_nimpl(2, 3),
+                    Gate::new_nor(14, 15),
+                    Gate::new_nimpl(16, 4),
+                    Gate::new_and(1, 2),
+                    Gate::new_nor(2, 3),
+                    Gate::new_and(18, 19),
+                ],
+                [
+                    (13, false),
+                    (12, false),
+                    (16, false),
+                    (14, false),
+                    (17, false),
+                    (9, false),
+                    (12, true),
+                    (20, false),
+                    (16, true),
+                ],
+            )
+            .unwrap(),
+            vec![
+                (8, AIGEREntry::Var(0, false)),
+                (10, AIGEREntry::Var(1, false)),
+                (12, AIGEREntry::Var(2, false)),
+                (14, AIGEREntry::Var(3, false)),
+                (16, AIGEREntry::Var(4, false)),
+                (2, AIGEREntry::Var(5, false)),
+                (4, AIGEREntry::Var(6, false)),
+                (6, AIGEREntry::Var(7, false)),
+                (34, AIGEREntry::Var(13, false)),
+                (26, AIGEREntry::Var(12, false)),
+                (40, AIGEREntry::Var(16, false)),
+                (36, AIGEREntry::Var(14, false)),
+                (42, AIGEREntry::Var(17, false)),
+                (24, AIGEREntry::Var(9, false)),
+                (27, AIGEREntry::Var(12, true)),
+                (32, AIGEREntry::Var(20, false)),
+                (41, AIGEREntry::Var(16, true))
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 21 3 5 4 13
+2
+4
+6
+8 34
+10 26
+12 40
+14 36
+16 42
+24
+27
+32
+41
+18 3 4
+20 6 8
+22 7 8
+24 17 18
+26 20 23
+28 10 12
+30 13 15
+32 28 30
+34 24 26
+36 8 10
+38 12 15
+40 37 39
+42 40 17
+"##
+        ),
+    );
 }
