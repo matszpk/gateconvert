@@ -4,7 +4,7 @@ use flussab_aiger::*;
 use gatesim::*;
 
 use std::collections::HashMap;
-use std::fmt::{self, Display};
+use std::fmt::{self, Debug, Display};
 use std::io::{Read, Write};
 
 pub fn to_aiger(
@@ -119,7 +119,7 @@ pub enum AIGERError {
     BadInput,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AIGEREntry {
     NoMap,            // no mapping
     Value(bool),      // boolean value
@@ -329,22 +329,26 @@ fn from_aiger_int(
             }
         })
         .collect::<Vec<_>>();
-    let outint = UDynVarSys::from_iter(outputs.iter().filter_map(|l| {
-        let lpos = *l & !1;
-        let expr = if *l < 2 {
-            BoolVarSys::from(*l == 1)
-        } else if let Some(x) = expr_map.get(&lpos) {
-            &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
-        } else {
-            panic!("Unexpected literal");
-        };
-        // just choose only not constant expressions
-        if expr.varlit().is_some() {
-            Some(expr)
-        } else {
-            None
-        }
-    }));
+    let outint = if !outputs.is_empty() {
+        UDynVarSys::from_iter(outputs.iter().filter_map(|l| {
+            let lpos = *l & !1;
+            let expr = if *l < 2 {
+                BoolVarSys::from(*l == 1)
+            } else if let Some(x) = expr_map.get(&lpos) {
+                &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
+            } else {
+                panic!("Unexpected literal");
+            };
+            // just choose only not constant expressions
+            if expr.varlit().is_some() {
+                Some(expr)
+            } else {
+                None
+            }
+        }))
+    } else {
+        UDynVarSys::var(0)
+    };
 
     // generate circuit with assign map
     let (circuit, assign_map) =

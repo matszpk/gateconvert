@@ -1,4 +1,4 @@
-use gateconvert::aiger;
+use gateconvert::aiger::{self, AIGEREntry};
 use gatesim::*;
 
 fn to_aiger_ascii_helper(circuit: Circuit<usize>, state_len: usize) -> String {
@@ -206,5 +206,20 @@ fn test_to_aiger() {
             0
         )
         .as_slice()
+    );
+}
+
+pub fn from_aiger_ascii_helper(
+    input: &str,
+) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), String> {
+    let mut bytes = input.as_bytes();
+    aiger::from_aiger(&mut bytes, true).map_err(|e| e.to_string())
+}
+
+#[test]
+fn test_from_aiger() {
+    assert_eq!(
+        Ok((Circuit::new(0, [], []).unwrap(), vec![],)),
+        from_aiger_ascii_helper("aag 0 0 0 0 0\n")
     );
 }
