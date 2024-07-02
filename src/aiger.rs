@@ -118,10 +118,18 @@ pub enum AIGERError {
     BadInput,
 }
 
+#[derive(Clone, Copy)]
+pub enum AIGEREntry {
+    NoMap,
+    Value(bool),
+    Var(usize, bool), // (circuit wire index, negation)
+}
+
 fn from_aiger_int(
     aig: &Aig<usize>,
-) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
+    use gategen::dynintvar::*;
     let state_len = aig.latches.len();
     let all_input_len = aig.inputs.len() + aig.latches.len();
     // exprs - input and latches initialized, rest is empty - initialized by false
@@ -131,7 +139,7 @@ fn from_aiger_int(
         .collect::<Vec<_>>();
     let mut expr_map = HashMap::<usize, usize>::new();
     for (i, l) in aig.latches.iter().enumerate() {
-        let lo = (l.state >> 1).checked_sub(1).unwrap();
+        let lo = l.state;
         if !expr_map.contains_key(&lo) {
             expr_map.insert(lo, i);
         } else {
@@ -139,7 +147,7 @@ fn from_aiger_int(
         }
     }
     for (i, input) in aig.inputs.iter().enumerate() {
-        let ino = (input >> 1).checked_sub(1).unwrap();
+        let ino = *input;
         if !expr_map.contains_key(&ino) {
             expr_map.insert(ino, i + state_len);
         } else {
@@ -147,7 +155,7 @@ fn from_aiger_int(
         }
     }
     for (i, g) in aig.and_gates.iter().enumerate() {
-        let go = (g.output >> 1).checked_sub(1).unwrap();
+        let go = g.output;
         if !expr_map.contains_key(&go) {
             expr_map.insert(go, all_input_len + i);
         } else {
@@ -280,7 +288,82 @@ fn from_aiger_int(
             }
         }
     }
-    Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
+    // map: entry: (literal, Some(value), circuit_output_count)
+    let mut ocount = 0;
+    let aiger_out_map = outputs
+        .iter()
+        .map(|l| {
+            let lpos = *l & !1;
+            let expr = if *l < 2 {
+                BoolVarSys::from(*l == 1)
+            } else if let Some(x) = expr_map.get(&lpos) {
+                &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
+            } else {
+                panic!("Unexpected literal");
+            };
+            if let Some(v) = expr.value() {
+                (l, Some(v), ocount)
+            } else {
+                let old_ocount = ocount;
+                ocount += 1;
+                (l, None, old_ocount)
+            }
+        })
+        .collect::<Vec<_>>();
+    let outint = UDynVarSys::from_iter(outputs.iter().filter_map(|l| {
+        let lpos = *l & !1;
+        let expr = if *l < 2 {
+            BoolVarSys::from(*l == 1)
+        } else if let Some(x) = expr_map.get(&lpos) {
+            &exprs[expr_map[x]] ^ ((lpos & 1) != 0)
+        } else {
+            panic!("Unexpected literal");
+        };
+        // just choose only not constant expressions
+        if expr.varlit().is_some() {
+            Some(expr)
+        } else {
+            None
+        }
+    }));
+
+    // generate circuit with assign map
+    let (circuit, assign_map) =
+        outint.to_translated_circuit_with_map(exprs.iter().take(all_input_len).cloned());
+    // collect for aiger_map: first are AIGER latches and AIGER inputs
+    let aiger_map = aig
+        .latches
+        .iter()
+        .map(|latch| latch.state)
+        .chain(aig.inputs.iter().copied())
+        .enumerate()
+        .map(|(i, l)| {
+            // map AIGER latches and inputs: (AIGER literal,
+            (
+                l,
+                if let Some(newidx) = assign_map[i] {
+                    AIGEREntry::Var(newidx, false)
+                } else {
+                    AIGEREntry::NoMap
+                },
+            )
+        })
+        .chain(
+            aiger_out_map
+                .into_iter()
+                .enumerate()
+                .map(|(i, (l, cb, circ_out_idx))| {
+                    if let Some(c) = cb {
+                        // constant
+                        (*l, AIGEREntry::Value(c))
+                    } else {
+                        let (o, n) = circuit.outputs()[circ_out_idx];
+                        (*l, AIGEREntry::Var(o, n))
+                    }
+                }),
+        )
+        .collect::<Vec<_>>();
+    Ok((circuit, assign_map, aiger_map))
 }
 
 // return: circuit, map for input (with values),
@@ -288,7 +371,7 @@ fn from_aiger_int(
 pub fn from_aiger(
     input: &mut impl Read,
     binmode: bool,
-) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     let aig = if binmode {
         let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
