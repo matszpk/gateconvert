@@ -666,4 +666,67 @@ fn test_from_aiger() {
 "##
         ),
     );
+    // more complex testcase - with cycles!
+    assert_eq!(
+        Err("Cycles in AIGER".to_string()),
+        from_aiger_ascii_helper(
+            r##"aag 19 4 0 5 15
+2
+4
+6
+8
+10
+22
+30
+32
+39
+10 2 6
+12 4 6
+14 2 8
+16 4 31
+18 12 14
+20 13 15
+22 19 21
+24 12 14
+26 16 24
+28 17 25
+30 27 29
+32 16 24
+34 22 30
+36 23 31
+38 35 37
+"##
+        ),
+    );
+    assert_eq!(
+        Err("Cycles in AIGER".to_string()),
+        from_aiger_ascii_helper(
+            r##"aag 19 4 0 5 15
+2
+4
+6
+8
+10
+22
+30
+32
+39
+10 2 6
+12 4 6
+14 2 8
+16 4 30
+18 12 14
+20 13 15
+22 19 21
+24 12 14
+26 16 24
+28 17 25
+30 27 29
+32 16 24
+34 22 30
+36 23 31
+38 35 37
+"##
+        ),
+    );
 }
