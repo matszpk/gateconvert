@@ -529,6 +529,47 @@ fn test_from_aiger() {
             "6 2 4\n8 3 5\n10 2 5\n12 2 5\n14 2 4\n16 13 15\n"
         )),
     );
+    // reordered variables
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(0, 1),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_xor(0, 1),
+                ],
+                [
+                    (2, false),
+                    (3, false),
+                    (4, false),
+                    (5, false),
+                    (2, true),
+                    (3, true),
+                    (4, true),
+                    (5, true),
+                ]
+            )
+            .unwrap(),
+            vec![
+                (12, AIGEREntry::Var(0, false)),
+                (14, AIGEREntry::Var(1, false)),
+                (16, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (6, AIGEREntry::Var(5, false)),
+                (17, AIGEREntry::Var(2, true)),
+                (9, AIGEREntry::Var(3, true)),
+                (11, AIGEREntry::Var(4, true)),
+                (7, AIGEREntry::Var(5, true)),
+            ],
+        )),
+        from_aiger_ascii_helper(concat!(
+            "aag 8 2 0 8 6\n12\n14\n16\n8\n10\n6\n17\n9\n11\n7\n",
+            "16 12 14\n8 13 15\n10 12 15\n4 12 14\n2 13 15\n6 5 3\n"
+        )),
+    );
     // latches
     assert_eq!(
         Ok((
