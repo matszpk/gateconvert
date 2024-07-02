@@ -995,4 +995,49 @@ fn test_from_aiger() {
             "6 2 4\n8 1 1\n10 1 0\n12 0 1\n14 0 1\n16 13 15\n"
         )),
     );
+    // with acyclic graph - many usages
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nimpl(2, 0),
+                ],
+                [(3, true), (3, false)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::NoMap),
+                (4, AIGEREntry::NoMap),
+                (6, AIGEREntry::Var(0, false)),
+                (8, AIGEREntry::Var(1, false)),
+                (19, AIGEREntry::Value(true)),
+                (24, AIGEREntry::Var(3, true)),
+                (31, AIGEREntry::Var(3, false)),
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 15 4 0 3 11
+2
+4
+6
+8
+19
+24
+31
+10 2 4
+12 3 5
+14 11 13
+16 6 8
+18 14 0
+20 15 0
+22 16 7
+24 21 23
+26 19 25
+28 24 18
+30 27 29
+"##
+        ),
+    );
 }
