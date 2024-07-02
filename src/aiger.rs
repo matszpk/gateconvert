@@ -123,51 +123,139 @@ fn from_aiger_int(
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>, Vec<Option<usize>>), AIGERError> {
     use gategen::boolvar::*;
     let state_len = aig.latches.len();
-    let only_input_len = aig.inputs.len() + aig.latches.len();
-    // wires - input and latches initialized, rest is empty - initialized by false
-    let mut wires = (0..only_input_len)
+    let all_input_len = aig.inputs.len() + aig.latches.len();
+    // exprs - input and latches initialized, rest is empty - initialized by false
+    let mut exprs = (0..all_input_len)
         .map(|_| BoolVarSys::var())
-        .chain((only_input_len..aig.max_var_index).map(|_| BoolVarSys::from(false)))
+        .chain((0..aig.and_gates.len()).map(|_| BoolVarSys::from(false)))
         .collect::<Vec<_>>();
-    let mut wire_map = HashMap::<usize, usize>::new();
+    let mut expr_map = HashMap::<usize, usize>::new();
     for (i, l) in aig.latches.iter().enumerate() {
         let lo = (l.state >> 1).checked_sub(1).unwrap();
-        if !wire_map.contains_key(&lo) {
-            wire_map.insert(lo, i);
+        if !expr_map.contains_key(&lo) {
+            expr_map.insert(lo, i);
         } else {
             return Err(AIGERError::LatchBadState);
         }
     }
     for (i, input) in aig.inputs.iter().enumerate() {
         let ino = (input >> 1).checked_sub(1).unwrap();
-        if !wire_map.contains_key(&ino) {
-            wire_map.insert(ino, i + state_len);
+        if !expr_map.contains_key(&ino) {
+            expr_map.insert(ino, i + state_len);
         } else {
             return Err(AIGERError::BadInput);
         }
     }
     for (i, g) in aig.and_gates.iter().enumerate() {
         let go = (g.output >> 1).checked_sub(1).unwrap();
-        if !wire_map.contains_key(&go) {
-            wire_map.insert(go, only_input_len + i);
+        if !expr_map.contains_key(&go) {
+            expr_map.insert(go, all_input_len + i);
         } else {
             return Err(AIGERError::AndGateBadOutput);
         }
     }
+    // expression resolve: (expr, and_gate)
+    let mut expr_resolve = |l| {
+        let lpos = l & !1;
+        if l < 2 {
+            (BoolVarSys::from(l == 1), None)
+        } else if let Some(x) = expr_map.get(&lpos) {
+            let and_gate = if *x >= all_input_len {
+                Some(aig.and_gates[*x - all_input_len])
+            } else {
+                None
+            };
+            (&exprs[expr_map[x]] ^ ((l & 1) != 0), and_gate)
+        } else {
+            panic!("Unexpected literal");
+        }
+    };
     #[derive(Clone)]
     struct StackEntry {
         way: usize,
-        node: usize,
-    };
+        lit: usize,
+    }
     let mut visited = vec![false; aig.max_var_index];
     let mut path_visited = vec![false; aig.max_var_index];
+    let mut stack = vec![];
     // XOR subpart gates will be skipped - if they are part of other path then included
     // automatically. Any negation propagation, constant assignments will be done
     // automatically gategen.
+    let outputs = aig
+        .latches
+        .iter()
+        .map(|latch| latch.next_state)
+        .chain(aig.outputs.iter().copied())
+        .collect::<Vec<_>>();
+    for (i, ol) in outputs.iter().enumerate() {
+        stack.push(StackEntry { way: 0, lit: *ol });
+        while !stack.is_empty() {
+            let mut top = stack.last_mut().unwrap();
+            let (expr, and_gate) = expr_resolve(top.lit);
+            let avar = top.lit >> 1;
+
+            if let Some(and_gate) = and_gate {
+                // check if XOR or Equal
+                let (gi0expr, gi0and) = expr_resolve(and_gate.inputs[0]);
+                let (gi1expr, gi1and) = expr_resolve(and_gate.inputs[1]);
+                let (expr, gate, is_xor) =
+                    if (and_gate.inputs[0] & 1) != 0 && (and_gate.inputs[1] & 1) != 0 {
+                        if let Some(gi0and) = gi0and {
+                            if let Some(gi1and) = gi1and {
+                                // compare results
+                                if (gi0and.inputs[0] == (gi1and.inputs[0] ^ 1)
+                                    && gi0and.inputs[1] == (gi1and.inputs[1] ^ 1))
+                                    || (gi0and.inputs[0] == (gi1and.inputs[1] ^ 1)
+                                        && gi0and.inputs[1] == (gi1and.inputs[0] ^ 1))
+                                {
+                                    // if XOR
+                                    ((gi0expr ^ gi1expr), and_gate, true)
+                                } else {
+                                    (expr, and_gate, false)
+                                }
+                            } else {
+                                (expr, and_gate, false)
+                            }
+                        } else {
+                            (expr, and_gate, false)
+                        }
+                    } else {
+                        (expr, and_gate, false)
+                    };
+
+                let way = top.way;
+                if way == 0 {
+                    if !path_visited[avar - 1] {
+                        path_visited[avar - 1] = true;
+                    } else {
+                        return Err(AIGERError::CyclesInAIGER);
+                    }
+                    if !visited[avar - 1] {
+                        visited[avar - 1] = true;
+                    } else {
+                        path_visited[avar - 1] = false;
+                        stack.pop();
+                        continue;
+                    }
+                } else if way == 1 {
+                } else {
+                    path_visited[avar - 1] = false;
+                    stack.pop();
+                }
+            } else {
+                // if constant
+                if avar >= 1 {
+                    path_visited[avar - 1] = false;
+                }
+                stack.pop();
+            }
+        }
+    }
     Ok((Circuit::new(0, [], []).unwrap(), vec![], vec![]))
 }
 
-// return: circuit, map for input, map for AIGER variables
+// return: circuit, map for input (with values),
+// map for AIGER variables (input, latches and output)
 pub fn from_aiger(
     input: &mut impl Read,
     binmode: bool,
