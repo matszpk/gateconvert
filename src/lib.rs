@@ -6,6 +6,7 @@ pub enum VNegs {
 }
 
 pub mod aiger;
+pub mod btor2;
 pub mod cnf;
 pub mod vbinopcircuit;
 pub mod vcircuit;
