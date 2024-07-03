@@ -1195,4 +1195,46 @@ fn test_from_aiger() {
 "##
         ),
     );
+    // from other source
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                3,
+                [
+                    Gate::new_xor(2, 0),
+                    Gate::new_nor(3, 1),
+                    Gate::new_xor(2, 0),
+                    Gate::new_and(5, 1),
+                    Gate::new_nor(4, 6),
+                ],
+                [(7, false)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (24, AIGEREntry::Var(7, false)),
+                (0, AIGEREntry::Value(false))
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 12 3 0 2 9
+2
+4
+6
+24
+0
+8 7 3
+10 6 2
+12 11 9
+14 12 4
+16 7 2
+18 6 3
+20 19 17
+22 20 5
+24 23 15
+"##,
+        ),
+    );
 }

@@ -294,7 +294,14 @@ fn from_aiger_int(
                         panic!("Unexpected literal");
                     };
                     // set expression to exprs
-                    println!("  ANDIdx {}", and_idx + all_input_len);
+                    println!(
+                        "  ANDIdx {} {} {} {} {}",
+                        is_xor,
+                        top.lit,
+                        and_idx + all_input_len,
+                        gi0l,
+                        gi1l
+                    );
                     exprs[all_input_len + and_idx] = if is_xor {
                         gi0expr ^ gi1expr
                     } else {
