@@ -416,11 +416,11 @@ pub fn from_aiger(
 ) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     let aig = if binmode {
-        let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
-        parser.parse()?
-    } else {
         let mut parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
         parser.parse()?.into()
+    } else {
+        let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
+        parser.parse()?
     };
     callsys(|| from_aiger_int(&aig))
 }

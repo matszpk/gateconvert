@@ -213,7 +213,7 @@ pub fn from_aiger_ascii_helper(
     input: &str,
 ) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), String> {
     let mut bytes = input.as_bytes();
-    aiger::from_aiger(&mut bytes, true).map_err(|e| e.to_string())
+    aiger::from_aiger(&mut bytes, false).map_err(|e| e.to_string())
 }
 
 #[test]
