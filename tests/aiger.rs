@@ -921,6 +921,69 @@ fn test_from_aiger() {
 "##
         ),
     );
+    // more complex case with latches - with constant
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                3,
+                [
+                    Gate::new_and(2, 0),
+                    Gate::new_nimpl(0, 2),
+                    Gate::new_nimpl(3, 4),
+                ],
+                [(5, false), (1, true), (5, true)],
+            )
+            .unwrap(),
+            vec![
+                (8, AIGEREntry::Var(0, false)), // 0
+                (10, AIGEREntry::NoMap),
+                (12, AIGEREntry::NoMap),
+                (14, AIGEREntry::NoMap),
+                (16, AIGEREntry::Var(1, false)),
+                (2, AIGEREntry::NoMap),
+                (4, AIGEREntry::NoMap),
+                (6, AIGEREntry::Var(2, false)),  // 2
+                (34, AIGEREntry::Value(false)),  // 34 24 26, 24 0 18 -> 34 0 26 -> false
+                (26, AIGEREntry::Var(5, false)), // ok
+                (40, AIGEREntry::Value(true)),   // 40 37 39, 36 0 10, 38 0 15 -> true
+                (36, AIGEREntry::Value(false)),  // false
+                (42, AIGEREntry::Var(1, true)),  // 42 40 17 -> 42 1 17 -> !16
+                (24, AIGEREntry::Value(false)),  // false
+                (27, AIGEREntry::Var(5, true)),  // ok
+                (32, AIGEREntry::Value(false)),  // 32 28 30, 30 0 15 -> 32 28 0 -> false
+                (41, AIGEREntry::Value(false))   // false
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 21 3 5 4 13
+2
+4
+6
+8 34
+10 26
+12 40
+14 36
+16 42
+24
+27
+32
+41
+18 3 4
+20 6 8
+22 7 8
+24 0 18
+26 20 23
+28 10 12
+30 0 15
+32 28 30
+34 24 26
+36 0 10
+38 0 15
+40 37 39
+42 40 17
+"##
+        ),
+    );
     // with acyclic graph - many usages
     assert_eq!(
         Ok((
