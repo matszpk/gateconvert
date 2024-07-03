@@ -365,7 +365,7 @@ fn from_aiger_int(
         .chain(aig.inputs.iter().copied())
         .enumerate()
         .map(|(i, l)| {
-            // map AIGER latches and inputs: (AIGER literal,
+            // map AIGER latches and inputs
             (
                 l,
                 if let Some(newidx) = assign_map[i] {
