@@ -35,6 +35,18 @@ struct ToCNF {
 }
 
 #[derive(Parser)]
+struct FromAIGER {
+    #[clap(help = "Set AIGER filename")]
+    aiger: PathBuf,
+    #[clap(help = "Set output circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output AIGER map filename")]
+    aiger_map: Option<PathBuf>,
+    #[clap(short, long, help = "Set binary mode")]
+    binary: bool,
+}
+
+#[derive(Parser)]
 struct ToAIGER {
     #[clap(help = "Set circuit filename")]
     circuit: PathBuf,
@@ -52,7 +64,9 @@ enum Commands {
     FromCNF(FromCNF),
     #[clap(about = "Convert to CNF")]
     ToCNF(ToCNF),
-    #[clap(about = "Convert to AIG")]
+    #[clap(about = "Convert from AIGER")]
+    FromAIGER(FromAIGER),
+    #[clap(about = "Convert to AIGER")]
     ToAIGER(ToAIGER),
 }
 
@@ -78,6 +92,20 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit).unwrap()).unwrap();
             let mut file = File::create(to_cnf.cnf).unwrap();
             cnf::to_cnf(&circuit, &mut file).unwrap();
+        }
+        Commands::FromAIGER(from_aiger) => {
+            let (circuit, map) = {
+                let mut cnf_file = File::open(from_aiger.aiger).unwrap();
+                aiger::from_aiger(&mut cnf_file, from_aiger.binary).unwrap()
+            };
+            fs::write(
+                from_aiger.circuit,
+                FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
+            )
+            .unwrap();
+            if let Some(map_name) = from_aiger.aiger_map {
+                fs::write(map_name, aiger::aiger_map_to_string(&map)).unwrap();
+            }
         }
         Commands::ToAIGER(to_aig) => {
             let circuit =
