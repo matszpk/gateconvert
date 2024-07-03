@@ -1353,3 +1353,33 @@ fn test_from_aiger() {
         ),
     );
 }
+
+#[test]
+fn test_aiger_map_to_string() {
+    assert_eq!(
+        concat!(
+            "8 0 10 - 12 - 14 - 16 1 2 - 4 - 6 2 34 false 26 5 ",
+            "40 true 36 false 42 !1 24 false 27 !5 32 false 41 false\n"
+        )
+        .to_string(),
+        aiger::aiger_map_to_string(&[
+            (8, AIGEREntry::Var(0, false)), // 0
+            (10, AIGEREntry::NoMap),
+            (12, AIGEREntry::NoMap),
+            (14, AIGEREntry::NoMap),
+            (16, AIGEREntry::Var(1, false)),
+            (2, AIGEREntry::NoMap),
+            (4, AIGEREntry::NoMap),
+            (6, AIGEREntry::Var(2, false)),  // 2
+            (34, AIGEREntry::Value(false)),  // 34 24 26, 24 0 18 -> 34 0 26 -> false
+            (26, AIGEREntry::Var(5, false)), // ok
+            (40, AIGEREntry::Value(true)),   // 40 37 39, 36 0 10, 38 0 15 -> true
+            (36, AIGEREntry::Value(false)),  // false
+            (42, AIGEREntry::Var(1, true)),  // 42 40 17 -> 42 1 17 -> !16
+            (24, AIGEREntry::Value(false)),  // false
+            (27, AIGEREntry::Var(5, true)),  // ok
+            (32, AIGEREntry::Value(false)),  // 32 28 30, 30 0 15 -> 32 28 0 -> false
+            (41, AIGEREntry::Value(false))   // false
+        ])
+    );
+}

@@ -136,7 +136,7 @@ impl Display for AIGEREntry {
     }
 }
 
-pub fn aiger_map_to_string<T: ToString>(map: &[(usize, AIGEREntry)]) -> String {
+pub fn aiger_map_to_string(map: &[(usize, AIGEREntry)]) -> String {
     map.into_iter()
         .map(|(l, x)| format!("{} {}", l, x))
         .collect::<Vec<_>>()
