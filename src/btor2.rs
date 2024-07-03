@@ -4,7 +4,7 @@ use std::io::Write;
 
 use crate::vcircuit::*;
 
-pub fn to_aiger(
+pub fn to_btor2(
     circuit: &Circuit<usize>,
     state_len: usize,
     out: &mut impl Write,
