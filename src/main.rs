@@ -58,6 +58,28 @@ struct ToAIGER {
     binary: bool,
 }
 
+#[derive(Parser)]
+struct ToBTOR2 {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output BTOR2 filename")]
+    btor2: PathBuf,
+    #[clap(help = "Set state length (number of latches)")]
+    state_len: Option<usize>,
+}
+
+#[derive(Parser)]
+struct ToBLIF {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output BLIF filename")]
+    blif: PathBuf,
+    #[clap(help = "Set state length (number of latches)")]
+    state_len: Option<usize>,
+    #[clap(help = "Set model name")]
+    model_name: Option<String>,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     #[clap(about = "Convert from CNF")]
@@ -70,16 +92,8 @@ enum Commands {
     ToAIGER(ToAIGER),
     #[clap(about = "Convert to BTOR2")]
     ToBTOR2(ToBTOR2),
-}
-
-#[derive(Parser)]
-struct ToBTOR2 {
-    #[clap(help = "Set circuit filename")]
-    circuit: PathBuf,
-    #[clap(help = "Set output BTOR2 filename")]
-    btor2: PathBuf,
-    #[clap(help = "Set state length (number of latches)")]
-    state_len: Option<usize>,
+    #[clap(about = "Convert to BLIF")]
+    ToBLIF(ToBLIF),
 }
 
 fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
@@ -152,6 +166,18 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit).unwrap()).unwrap();
             let mut file = File::create(to_btor2.btor2).unwrap();
             btor2::to_btor2(&circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
+        }
+        Commands::ToBLIF(to_blif) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_blif.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_blif.blif).unwrap();
+            blif::to_blif(
+                &circuit,
+                to_blif.state_len.unwrap_or_default(),
+                &to_blif.model_name.unwrap_or("top".to_string()),
+                &mut file,
+            )
+            .unwrap();
         }
     }
 }
