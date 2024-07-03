@@ -16,7 +16,7 @@ pub fn to_btor2(
     let circuit = VCircuit::to_op_and_ximpl_circuit(circuit.clone(), false);
     let outputs = &circuit.outputs;
 
-    out.write(b"1 sort bitvec 1")?;
+    out.write(b"1 sort bitvec 1\n")?;
     // write states
     for i in 0..state_len {
         writeln!(out, "{} state 1", i + 2)?;
