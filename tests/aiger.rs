@@ -1237,4 +1237,79 @@ fn test_from_aiger() {
 "##,
         ),
     );
+    // from other source
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                3,
+                [Gate::new_xor(1, 0), Gate::new_xor(3, 2),],
+                [(4, false), (2, false)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (18, AIGEREntry::Var(4, false)),
+                (6, AIGEREntry::Var(2, false))
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 9 3 0 2 6
+2
+4
+6
+18
+6
+8 4 2
+10 5 3
+12 11 9
+14 12 6
+16 13 7
+18 17 15
+"##,
+        ),
+    );
+    // from other source
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                3,
+                [
+                    Gate::new_xor(2, 0),
+                    Gate::new_xor(3, 1),
+                    Gate::new_and(2, 0),
+                    Gate::new_nor(5, 1),
+                    Gate::new_nor(2, 0),
+                    Gate::new_nor(6, 7),
+                ],
+                [(4, false), (8, false)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (19, AIGEREntry::Var(4, false)),
+                (22, AIGEREntry::Var(8, false))
+            ],
+        )),
+        from_aiger_ascii_helper(
+            r##"aag 11 3 0 2 8
+2
+4
+6
+19
+22
+8 7 3
+10 6 2
+12 11 9
+14 13 4
+16 12 5
+18 17 15
+20 11 5
+22 21 9
+"##,
+        ),
+    );
 }
