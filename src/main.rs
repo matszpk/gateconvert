@@ -68,6 +68,18 @@ enum Commands {
     FromAIGER(FromAIGER),
     #[clap(about = "Convert to AIGER")]
     ToAIGER(ToAIGER),
+    #[clap(about = "Convert to BTOR2")]
+    ToBTOR2(ToBTOR2),
+}
+
+#[derive(Parser)]
+struct ToBTOR2 {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output BTOR2 filename")]
+    btor2: PathBuf,
+    #[clap(help = "Set state length (number of latches)")]
+    state_len: Option<usize>,
 }
 
 fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
@@ -134,6 +146,12 @@ fn main() {
                 binary,
             )
             .unwrap();
+        }
+        Commands::ToBTOR2(to_btor2) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_btor2.btor2).unwrap();
+            btor2::to_btor2(&circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
         }
     }
 }
