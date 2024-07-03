@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 use gatesim::*;
 
 use std::fs::{self, File};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 #[derive(Parser)]
@@ -42,7 +42,7 @@ struct FromAIGER {
     circuit: PathBuf,
     #[clap(help = "Set output AIGER map filename")]
     aiger_map: Option<PathBuf>,
-    #[clap(short, long, help = "Set binary mode")]
+    #[clap(short, long, help = "Set binary mode if no proper file extension")]
     binary: bool,
 }
 
@@ -54,7 +54,7 @@ struct ToAIGER {
     aiger: PathBuf,
     #[clap(help = "Set state length (number of latches)")]
     state_len: Option<usize>,
-    #[clap(short, long, help = "Set binary mode")]
+    #[clap(short, long, help = "Set binary mode if no proper file extension")]
     binary: bool,
 }
 
@@ -68,6 +68,20 @@ enum Commands {
     FromAIGER(FromAIGER),
     #[clap(about = "Convert to AIGER")]
     ToAIGER(ToAIGER),
+}
+
+fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
+    if let Some(ext) = name.as_ref().extension() {
+        if ext == "aag" {
+            false
+        } else if ext == "aig" {
+            true
+        } else {
+            binary
+        }
+    } else {
+        binary
+    }
 }
 
 fn main() {
@@ -93,21 +107,23 @@ fn main() {
             let mut file = File::create(to_cnf.cnf).unwrap();
             cnf::to_cnf(&circuit, &mut file).unwrap();
         }
-        Commands::FromAIGER(from_aiger) => {
+        Commands::FromAIGER(from_aig) => {
+            let binary = aiger_file_ext_binary_mode(&from_aig.aiger, from_aig.binary);
             let (circuit, map) = {
-                let mut cnf_file = File::open(from_aiger.aiger).unwrap();
-                aiger::from_aiger(&mut cnf_file, from_aiger.binary).unwrap()
+                let mut cnf_file = File::open(from_aig.aiger).unwrap();
+                aiger::from_aiger(&mut cnf_file, binary).unwrap()
             };
             fs::write(
-                from_aiger.circuit,
+                from_aig.circuit,
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
             )
             .unwrap();
-            if let Some(map_name) = from_aiger.aiger_map {
+            if let Some(map_name) = from_aig.aiger_map {
                 fs::write(map_name, aiger::aiger_map_to_string(&map)).unwrap();
             }
         }
         Commands::ToAIGER(to_aig) => {
+            let binary = aiger_file_ext_binary_mode(&to_aig.aiger, to_aig.binary);
             let circuit =
                 Circuit::<usize>::from_str(&fs::read_to_string(to_aig.circuit).unwrap()).unwrap();
             let mut file = File::create(to_aig.aiger).unwrap();
@@ -115,7 +131,7 @@ fn main() {
                 &circuit,
                 to_aig.state_len.unwrap_or_default(),
                 &mut file,
-                to_aig.binary,
+                binary,
             )
             .unwrap();
         }
