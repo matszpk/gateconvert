@@ -1354,6 +1354,129 @@ fn test_from_aiger() {
     );
 }
 
+pub fn from_aiger_bin_helper(
+    mut input: &[u8],
+) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), String> {
+    aiger::from_aiger(&mut input, true).map_err(|e| e.to_string())
+}
+
+#[test]
+fn test_from_aiger_bin() {
+    assert_eq!(
+        Ok((Circuit::new(0, [], []).unwrap(), vec![],)),
+        from_aiger_bin_helper(b"aig 0 0 0 0 0\n")
+    );
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                2,
+                [
+                    Gate::new_and(1, 0),
+                    Gate::new_nor(1, 0),
+                    Gate::new_nimpl(0, 1),
+                    Gate::new_xor(1, 0),
+                ],
+                [
+                    (2, false),
+                    (3, false),
+                    (4, false),
+                    (5, false),
+                    (2, true),
+                    (3, true),
+                    (4, true),
+                    (5, true),
+                ]
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (16, AIGEREntry::Var(5, false)),
+                (7, AIGEREntry::Var(2, true)),
+                (9, AIGEREntry::Var(3, true)),
+                (11, AIGEREntry::Var(4, true)),
+                (17, AIGEREntry::Var(5, true)),
+            ],
+        )),
+        from_aiger_bin_helper(&[
+            97, 105, 103, 32, 56, 32, 50, 32, 48, 32, 56, 32, 54, 10, 54, 10, 56, 10, 49, 48, 10,
+            49, 54, 10, 55, 10, 57, 10, 49, 49, 10, 49, 55, 10, 2, 2, 3, 2, 5, 3, 8, 2, 9, 2, 1, 2
+        ]),
+    );
+    // latches
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                5,
+                [
+                    Gate::new_and(1, 0),
+                    Gate::new_nor(2, 3),
+                    Gate::new_nimpl(0, 2),
+                    Gate::new_xor(1, 4),
+                ],
+                [(5, true), (6, false), (7, false), (8, true)]
+            )
+            .unwrap(),
+            vec![
+                (6, AIGEREntry::Var(0, false)),
+                (8, AIGEREntry::Var(1, false)),
+                (10, AIGEREntry::Var(2, false)),
+                (2, AIGEREntry::Var(3, false)),
+                (4, AIGEREntry::Var(4, false)),
+                (13, AIGEREntry::Var(5, true)),
+                (14, AIGEREntry::Var(6, false)),
+                (16, AIGEREntry::Var(7, false)),
+                (23, AIGEREntry::Var(8, true)),
+            ],
+        )),
+        from_aiger_bin_helper(&[
+            97, 105, 103, 32, 49, 49, 32, 50, 32, 51, 32, 49, 32, 54, 10, 49, 51, 10, 49, 52, 10,
+            49, 54, 10, 50, 51, 10, 4, 2, 3, 8, 5, 5, 10, 4, 11, 4, 1, 2
+        ]),
+    );
+    assert_eq!(
+        Ok((
+            Circuit::new(
+                4,
+                [
+                    Gate::new_and(2, 0),
+                    Gate::new_and(3, 0),
+                    Gate::new_and(2, 1),
+                    // add a1*b0 + a0*b1
+                    Gate::new_xor(5, 6),
+                    Gate::new_and(5, 6),
+                    Gate::new_and(3, 1),
+                    // add c(a1*b0 + a0*b1) + a1*b1
+                    Gate::new_xor(8, 9),
+                    Gate::new_and(8, 9),
+                    Gate::new_xor(10, 7),
+                ],
+                [(4, false), (7, false), (10, false), (11, false), (12, true)],
+            )
+            .unwrap(),
+            vec![
+                (2, AIGEREntry::Var(0, false)),
+                (4, AIGEREntry::Var(1, false)),
+                (6, AIGEREntry::Var(2, false)),
+                (8, AIGEREntry::Var(3, false)),
+                (10, AIGEREntry::Var(4, false)),
+                (22, AIGEREntry::Var(7, false)),
+                (30, AIGEREntry::Var(10, false)),
+                (32, AIGEREntry::Var(11, false)),
+                (39, AIGEREntry::Var(12, true)),
+            ],
+        )),
+        from_aiger_bin_helper(&[
+            97, 105, 103, 32, 49, 57, 32, 52, 32, 48, 32, 53, 32, 49, 53, 10, 49, 48, 10, 50, 50,
+            10, 51, 48, 10, 51, 50, 10, 51, 57, 10, 4, 4, 6, 2, 6, 6, 8, 4, 4, 2, 5, 2, 1, 2, 10,
+            2, 2, 8, 3, 8, 1, 2, 8, 8, 4, 8, 5, 8, 1, 2
+        ]),
+    );
+}
+
 #[test]
 fn test_aiger_map_to_string() {
     assert_eq!(
