@@ -58,9 +58,9 @@ pub fn to_btor2(
         if *n {
             writeln!(out, "{} not 1 {}", index, o + 2)?;
             index += 1;
-            writeln!(out, "{} output 1 {}", index, index - 1)?;
+            writeln!(out, "{} output {}", index, index - 1)?;
         } else {
-            writeln!(out, "{} output 1 {}", index, o + 2)?;
+            writeln!(out, "{} output {}", index, o + 2)?;
         }
         index += 1;
     }
