@@ -377,4 +377,107 @@ fn test_to_blif() {
         )
         .as_str()
     );
+    assert_eq!(
+        r##".model top
+.inputs i0
+.inputs i1
+.inputs i2
+.inputs i3
+.inputs i4
+.outputs o0
+.outputs o1
+.outputs o2
+.outputs o3
+.outputs o4
+.outputs o5
+.outputs o6
+.outputs o7
+.outputs o8
+.outputs o9
+.outputs o10
+.outputs o11
+.outputs o12
+.outputs o13
+.outputs o14
+.outputs o15
+.outputs o16
+.outputs o17
+.outputs o18
+.outputs o19
+.names o0 i1 o4
+11 1
+.names o2 o4 o10
+00 1
+.names i3 o10 o6
+10 1
+.names i4 o6 o8
+10 1
+01 1
+.names o0 o3
+0 1
+.names o2 o1
+0 1
+.names o4 o11
+0 1
+.names o10 o5
+0 1
+.names o6 o9
+0 1
+.names o8 o7
+0 1
+.names o7 o12
+1 1
+.names o6 o13
+1 1
+.names o5 o14
+1 1
+.names o4 o15
+1 1
+.names o11 o16
+1 1
+.names o10 o17
+1 1
+.names o9 o18
+1 1
+.names o8 o19
+1 1
+.end
+"##,
+        to_blif_helper(
+            Circuit::new(
+                5,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(2, 5),
+                    Gate::new_nimpl(3, 6),
+                    Gate::new_xor(4, 7),
+                ],
+                [
+                    (0, false), // 0
+                    (2, true),  // 1
+                    (2, false), // 2
+                    (0, true),  // 3
+                    (5, false), // 4
+                    (6, true),  // 5
+                    (7, false), // 6
+                    (8, true),  // 7
+                    (8, false), // 8
+                    (7, true),  // 9
+                    (6, false), // 10
+                    (5, true),  // 11
+                    (8, true),  // 12
+                    (7, false), // 13
+                    (6, true),  // 14
+                    (5, false), // 15
+                    (5, true),  // 16
+                    (6, false), // 17
+                    (7, true),  // 18
+                    (8, false), // 19
+                ]
+            )
+            .unwrap(),
+            0
+        )
+        .as_str()
+    );
 }
