@@ -1,5 +1,6 @@
 use gatesim::*;
 
+use std::collections::BTreeMap;
 use std::io::{BufWriter, Write};
 
 use crate::vcircuit::*;
@@ -16,18 +17,41 @@ pub fn to_blif(
     assert!(state_len <= output_len);
 
     let mut out = BufWriter::new(out);
+    let mut wire_out_map = BTreeMap::new();
+    let mut dup_map = vec![];
+    for (oi, (o, n)) in circuit.outputs().iter().enumerate() {
+        if let Some((old_oi, _)) = wire_out_map.get(&(*o, *n)) {
+            // resolve duplicate
+            dup_map.push((oi, *old_oi));
+        } else {
+            wire_out_map.insert((*o, *n), (oi, *n));
+        }
+    }
     writeln!(out, ".model {}", model_name)?;
     for i in 0..input_len {
         writeln!(out, ".inputs i{}", i)?;
     }
-    for (i, (o, n)) in circuit.outputs().iter().enumerate() {
-        writeln!(out, ".outputs {}{}", if *n { "n" } else { "i" }, o)?;
+    for i in 0..output_len {
+        writeln!(out, ".outputs o{}", i)?;
     }
-    for (i, (o, n)) in circuit.outputs()[0..state_len].iter().enumerate() {
-        writeln!(out, ".latch {}{} i{}", if *n { "n" } else { "i" }, o, i)?;
+    for i in 0..state_len {
+        writeln!(out, ".latch o{0} i{0}", i)?;
     }
+    let resolve_name = |i| {
+        if let Some((oi, _)) = wire_out_map.get(&(i, false)) {
+            format!("o{}", oi)
+        } else {
+            format!("i{}", i)
+        }
+    };
     for (i, g) in circuit.gates().iter().enumerate() {
-        writeln!(out, ".names i{} i{} i{}", g.i0, g.i1, i + input_len)?;
+        writeln!(
+            out,
+            ".names {} {} {}",
+            resolve_name(g.i0),
+            resolve_name(g.i1),
+            resolve_name(i + input_len)
+        )?;
         let pla_tbl = match g.func {
             GateFunc::And => b"11 1\n".as_slice(),
             GateFunc::Nor => b"00 1\n".as_slice(),
@@ -36,10 +60,15 @@ pub fn to_blif(
         };
         out.write(pla_tbl)?;
     }
-    for (o, n) in circuit.outputs() {
+    // generate negations
+    for ((o, _), (oi, n)) in &wire_out_map {
         if *n {
-            write!(out, ".names i{0} n{0}\n0 1\n", o)?;
+            write!(out, ".names {} o{}\n0 1\n", resolve_name(*o), *oi)?;
         }
+    }
+    // generate output duplicates
+    for (oi, old_oi) in dup_map {
+        write!(out, ".names o{} o{}\n1 1\n", old_oi, oi)?;
     }
     out.write(b".end\n")?;
     Ok(())
