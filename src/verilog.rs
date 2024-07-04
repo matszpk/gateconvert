@@ -57,12 +57,15 @@ pub fn to_verilog(
         }
         out.write(b"\n")?;
     }
+    if input_len + output_len == 0 {
+        out.write(b"    );\n")?;
+    }
     // input and output definitions
     for i in 0..input_len {
-        writeln!(out, "    i{} input", i)?;
+        writeln!(out, "    input i{};", i)?;
     }
     for i in 0..output_len {
-        writeln!(out, "    o{} output", i)?;
+        writeln!(out, "    output o{};", i)?;
     }
     // wires definitions
     for i in 0..circuit.gates.len() {
@@ -84,7 +87,7 @@ pub fn to_verilog(
         };
         writeln!(
             out,
-            "    assign {} = {}({} {} {}{})",
+            "    assign {} = {}({} {} {}{});",
             resolve_name(i + input_len),
             if *n == NegOutput { "~" } else { "" },
             resolve_name(g.i0),
@@ -96,12 +99,12 @@ pub fn to_verilog(
     // generate negations
     for ((o, _), (oi, n)) in &wire_out_map {
         if *n {
-            writeln!(out, "    assign {} = ~{}", *oi, resolve_name(*o))?;
+            writeln!(out, "    assign o{} = ~{};", *oi, resolve_name(*o))?;
         }
     }
     // generate output duplicates
     for (oi, old_oi) in dup_map {
-        writeln!(out, "    assign {} = ~{}", oi, old_oi)?;
+        writeln!(out, "    assign o{} = o{};", oi, old_oi)?;
     }
     out.write(b"endmodule\n")?;
     Ok(())
