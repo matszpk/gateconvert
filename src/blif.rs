@@ -78,3 +78,7 @@ pub fn to_blif(
     out.write(b".end\n")?;
     Ok(())
 }
+
+// HINT to optimize PLA tables: if number 0 or 1 (not -) in PLA is greater than (2**inputs)/4
+// then try to optimize table by circuit DB and XOR-table.
+// if lines are: 'xxxxx1xx0xxxx' and 'xxxxx0xx1xxxx' then use XOR.
