@@ -82,6 +82,18 @@ struct ToBLIF {
     clock_num: Option<usize>,
 }
 
+#[derive(Parser)]
+struct ToVerilog {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output verilog filename")]
+    verilog: PathBuf,
+    #[clap(help = "Set module name")]
+    module_name: Option<String>,
+    #[clap(short, long, help = "Disable optimization of negations")]
+    no_optimize_negs: bool,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     #[clap(about = "Convert from CNF")]
@@ -96,6 +108,8 @@ enum Commands {
     ToBTOR2(ToBTOR2),
     #[clap(about = "Convert to BLIF")]
     ToBLIF(ToBLIF),
+    #[clap(about = "Convert to Verilog")]
+    ToVerilog(ToVerilog),
 }
 
 fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
@@ -178,6 +192,18 @@ fn main() {
                 to_blif.state_len.unwrap_or_default(),
                 to_blif.clock_num.unwrap_or_default(),
                 &to_blif.model_name.unwrap_or("top".to_string()),
+                &mut file,
+            )
+            .unwrap();
+        }
+        Commands::ToVerilog(to_v) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_v.verilog).unwrap();
+            verilog::to_verilog(
+                &circuit,
+                &to_v.module_name.unwrap_or("top".to_string()),
+                !to_v.no_optimize_negs,
                 &mut file,
             )
             .unwrap();
