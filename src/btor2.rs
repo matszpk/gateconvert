@@ -49,11 +49,11 @@ pub fn to_btor2(
     let mut index = input_len + 2 + gate_num;
     for (i, (o, n)) in circuit.outputs[0..state_len].iter().enumerate() {
         if *n {
-            let neg = if let Some(neg_nid) = neg_map.get(&o) {
+            let neg = if let Some(neg_nid) = neg_map.get(o) {
                 *neg_nid
             } else {
                 writeln!(out, "{} not 1 {}", index, o + 2)?;
-                neg_map.insert(o, index);
+                neg_map.insert(*o, index);
                 index += 1;
                 neg_map[o]
             };
@@ -66,11 +66,11 @@ pub fn to_btor2(
     // write outputs
     for (o, n) in &circuit.outputs[state_len..] {
         if *n {
-            let neg = if let Some(neg_nid) = neg_map.get(&o) {
+            let neg = if let Some(neg_nid) = neg_map.get(o) {
                 *neg_nid
             } else {
                 writeln!(out, "{} not 1 {}", index, o + 2)?;
-                neg_map.insert(o, index);
+                neg_map.insert(*o, index);
                 index += 1;
                 neg_map[o]
             };
