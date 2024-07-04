@@ -1,5 +1,6 @@
 use gatesim::*;
 
+use std::collections::HashMap;
 use std::io::{BufWriter, Write};
 
 use crate::vcircuit::*;
@@ -42,13 +43,21 @@ pub fn to_btor2(
         let index = input_len + 2 + i;
         writeln!(out, "{} {} 1 {} {}", index, op, g.i0 + 2, g.i1 + 2)?;
     }
+    // to collect negations
+    let mut neg_map = HashMap::new();
     // write nexts
     let mut index = input_len + 2 + gate_num;
     for (i, (o, n)) in circuit.outputs[0..state_len].iter().enumerate() {
         if *n {
-            writeln!(out, "{} not 1 {}", index, o + 2)?;
-            index += 1;
-            writeln!(out, "{} next 1 {} {}", index, i + 2, index - 1)?;
+            let neg = if let Some(neg_nid) = neg_map.get(&o) {
+                *neg_nid
+            } else {
+                writeln!(out, "{} not 1 {}", index, o + 2)?;
+                neg_map.insert(o, index);
+                index += 1;
+                neg_map[o]
+            };
+            writeln!(out, "{} next 1 {} {}", index, i + 2, neg)?;
         } else {
             writeln!(out, "{} next 1 {} {}", index, i + 2, o + 2)?;
         }
@@ -57,9 +66,15 @@ pub fn to_btor2(
     // write outputs
     for (o, n) in &circuit.outputs[state_len..] {
         if *n {
-            writeln!(out, "{} not 1 {}", index, o + 2)?;
-            index += 1;
-            writeln!(out, "{} output {}", index, index - 1)?;
+            let neg = if let Some(neg_nid) = neg_map.get(&o) {
+                *neg_nid
+            } else {
+                writeln!(out, "{} not 1 {}", index, o + 2)?;
+                neg_map.insert(o, index);
+                index += 1;
+                neg_map[o]
+            };
+            writeln!(out, "{} output {}", index, neg)?;
         } else {
             writeln!(out, "{} output {}", index, o + 2)?;
         }
