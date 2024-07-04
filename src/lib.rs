@@ -11,6 +11,7 @@ pub mod btor2;
 pub mod cnf;
 pub mod vbinopcircuit;
 pub mod vcircuit;
+pub mod verilog;
 
 pub fn map_to_string<T: ToString>(map: &[Option<T>]) -> String {
     map.into_iter()

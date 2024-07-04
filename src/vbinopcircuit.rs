@@ -81,15 +81,6 @@ where
             self.gates.binary_search_by_key(&t, |(x, _)| *x).ok()
         }
     }
-
-    #[inline]
-    pub(crate) fn gates(&self) -> &[(T, T)] {
-        &self.gates
-    }
-    #[inline]
-    pub(crate) fn root(&self) -> T {
-        self.root
-    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
