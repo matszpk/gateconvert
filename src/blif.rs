@@ -20,11 +20,11 @@ pub fn to_blif(
     for i in 0..input_len {
         writeln!(out, ".inputs i{}", i)?;
     }
-    for i in 0..output_len {
-        writeln!(out, ".outputs o{}", i)?;
+    for (i, (o, n)) in circuit.outputs().iter().enumerate() {
+        writeln!(out, ".outputs {}{}", if *n { "n" } else { "i" }, o)?;
     }
-    for i in 0..state_len {
-        writeln!(out, ".latch o{0} i{0}", i)?;
+    for (i, (o, n)) in circuit.outputs()[0..state_len].iter().enumerate() {
+        writeln!(out, ".latch {}{} i{}", if *n { "n" } else { "i" }, o, i)?;
     }
     for (i, g) in circuit.gates().iter().enumerate() {
         writeln!(out, ".names i{} i{} i{}", g.i0, g.i1, i + input_len)?;
@@ -36,11 +36,9 @@ pub fn to_blif(
         };
         out.write(pla_tbl)?;
     }
-    for (i, (o, n)) in circuit.outputs().iter().enumerate() {
+    for (o, n) in circuit.outputs() {
         if *n {
-            write!(out, ".names i{} o{}\n0 1\n", o, i)?;
-        } else {
-            write!(out, ".names i{} o{}\n1 1\n", o, i)?;
+            write!(out, ".names i{0} n{0}\n0 1\n", o)?;
         }
     }
     out.write(b".end\n")?;
