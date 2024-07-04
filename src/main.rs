@@ -86,7 +86,7 @@ struct ToBLIF {
 struct ToVerilog {
     #[clap(help = "Set circuit filename")]
     circuit: PathBuf,
-    #[clap(help = "Set output verilog filename")]
+    #[clap(help = "Set output Verilog filename")]
     verilog: PathBuf,
     #[clap(help = "Set module name")]
     module_name: Option<String>,
