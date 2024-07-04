@@ -94,6 +94,20 @@ struct ToVerilog {
     no_optimize_negs: bool,
 }
 
+#[derive(Parser)]
+struct ToVHDL {
+    #[clap(help = "Set circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output VHDL filename")]
+    vhdl: PathBuf,
+    #[clap(help = "Set entity name")]
+    entity_name: Option<String>,
+    #[clap(help = "Set architecture name")]
+    architecture: Option<String>,
+    #[clap(short, long, help = "Disable optimization of negations")]
+    no_optimize_negs: bool,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     #[clap(about = "Convert from CNF")]
@@ -110,6 +124,8 @@ enum Commands {
     ToBLIF(ToBLIF),
     #[clap(about = "Convert to Verilog")]
     ToVerilog(ToVerilog),
+    #[clap(about = "Convert to VHDL")]
+    ToVHDL(ToVHDL),
 }
 
 fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
@@ -203,6 +219,19 @@ fn main() {
             verilog::to_verilog(
                 &circuit,
                 &to_v.module_name.unwrap_or("top".to_string()),
+                !to_v.no_optimize_negs,
+                &mut file,
+            )
+            .unwrap();
+        }
+        Commands::ToVHDL(to_v) => {
+            let circuit =
+                Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
+            let mut file = File::create(to_v.vhdl).unwrap();
+            vhdl::to_vhdl(
+                &circuit,
+                &to_v.entity_name.unwrap_or("top".to_string()),
+                &to_v.architecture.unwrap_or("rtl".to_string()),
                 !to_v.no_optimize_negs,
                 &mut file,
             )
