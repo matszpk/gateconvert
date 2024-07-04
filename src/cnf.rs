@@ -1,7 +1,6 @@
 use cnfgen::writer::{CNFError, CNFWriter};
 use flussab_cnf::cnf;
 use gatesim::*;
-use std::fs::File;
 use std::io::{Read, Write};
 
 fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
@@ -47,14 +46,14 @@ pub fn from_cnf_int(
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
     use gategen::boolvar::*;
     let hdr = parser.header().unwrap();
-    let mut vars = (0..hdr.var_count)
+    let vars = (0..hdr.var_count)
         .map(|_| BoolVarSys::var())
         .collect::<Vec<_>>();
     let mut clauses = BoolVarSys::from(true);
     loop {
         match parser.next_clause() {
             Ok(Some(clause)) => {
-                let mut clause = clause.into_iter().fold(BoolVarSys::from(false), |a, l| {
+                let clause = clause.into_iter().fold(BoolVarSys::from(false), |a, l| {
                     let l = if *l > 0 {
                         vars[usize::try_from(*l).unwrap() - 1].clone()
                     } else if *l < 0 {

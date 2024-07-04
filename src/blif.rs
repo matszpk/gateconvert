@@ -3,8 +3,6 @@ use gatesim::*;
 use std::collections::BTreeMap;
 use std::io::{BufWriter, Write};
 
-use crate::vcircuit::*;
-
 pub fn to_blif(
     circuit: &Circuit<usize>,
     state_len: usize,

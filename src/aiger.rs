@@ -40,7 +40,6 @@ pub fn to_aiger(
     let mut and_gates = Vec::with_capacity(and_gate_count);
     for (i, g) in circuit.gates().iter().enumerate() {
         let wire = i + input_len;
-        let olit = wires2lits[wire];
         match g.func {
             GateFunc::And => {
                 and_gates.push(OrderedAndGate {
@@ -212,10 +211,10 @@ fn from_aiger_int(
         .map(|latch| latch.next_state)
         .chain(aig.outputs.iter().copied())
         .collect::<Vec<_>>();
-    for (i, ol) in outputs.iter().enumerate() {
+    for ol in &outputs {
         stack.push(StackEntry { way: 0, lit: *ol });
         while !stack.is_empty() {
-            let mut top = stack.last_mut().unwrap();
+            let top = stack.last_mut().unwrap();
             let and_gate = and_resolve(top.lit);
             let avar = top.lit >> 1;
 
@@ -377,18 +376,15 @@ fn from_aiger_int(
         })
         .chain(
             // main next states of latches and outputs
-            aiger_out_map
-                .into_iter()
-                .enumerate()
-                .map(|(i, (l, cb, circ_out_idx))| {
-                    if let Some(c) = cb {
-                        // constant
-                        (*l, AIGEREntry::Value(c))
-                    } else {
-                        let (o, n) = circuit.outputs()[circ_out_idx];
-                        (*l, AIGEREntry::Var(o, n))
-                    }
-                }),
+            aiger_out_map.into_iter().map(|(l, cb, circ_out_idx)| {
+                if let Some(c) = cb {
+                    // constant
+                    (*l, AIGEREntry::Value(c))
+                } else {
+                    let (o, n) = circuit.outputs()[circ_out_idx];
+                    (*l, AIGEREntry::Var(o, n))
+                }
+            }),
         )
         .collect::<Vec<_>>();
     Ok((circuit, aiger_map))
@@ -402,10 +398,10 @@ pub fn from_aiger(
 ) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
     use gategen::boolvar::*;
     let aig = if binmode {
-        let mut parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
+        let parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
         parser.parse()?.into()
     } else {
-        let mut parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
+        let parser = ascii::Parser::<usize>::from_read(input, ascii::Config::default())?;
         parser.parse()?
     };
     callsys(|| from_aiger_int(&aig))

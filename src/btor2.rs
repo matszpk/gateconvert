@@ -15,7 +15,6 @@ pub fn to_btor2(
     assert!(state_len <= input_len);
     assert!(state_len <= output_len);
     let circuit = VCircuit::to_op_and_ximpl_circuit(circuit.clone(), false);
-    let outputs = &circuit.outputs;
 
     let mut out = BufWriter::new(out);
     out.write(b"1 sort bitvec 1\n")?;
