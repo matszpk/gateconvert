@@ -78,6 +78,8 @@ struct ToBLIF {
     state_len: Option<usize>,
     #[clap(help = "Set model name")]
     model_name: Option<String>,
+    #[clap(short, long, help = "Set number of clocks")]
+    clock_num: Option<usize>,
 }
 
 #[derive(Subcommand)]
@@ -174,6 +176,7 @@ fn main() {
             blif::to_blif(
                 &circuit,
                 to_blif.state_len.unwrap_or_default(),
+                to_blif.clock_num.unwrap_or_default(),
                 &to_blif.model_name.unwrap_or("top".to_string()),
                 &mut file,
             )

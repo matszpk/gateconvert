@@ -6,12 +6,13 @@ use std::io::{BufWriter, Write};
 pub fn to_blif(
     circuit: &Circuit<usize>,
     state_len: usize,
+    clock_num: usize,
     model_name: &str,
     out: &mut impl Write,
 ) -> Result<(), std::io::Error> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
-    assert!(state_len <= input_len);
+    assert!(state_len + clock_num <= input_len);
     assert!(state_len <= output_len);
 
     let mut out = BufWriter::new(out);
@@ -26,7 +27,13 @@ pub fn to_blif(
         }
     }
     writeln!(out, ".model {}", model_name)?;
-    for i in 0..input_len {
+    for i in 0..state_len {
+        writeln!(out, ".inputs i{}", i)?;
+    }
+    for i in state_len..state_len + clock_num {
+        writeln!(out, ".clocks i{}", i)?;
+    }
+    for i in state_len + clock_num..input_len {
         writeln!(out, ".inputs i{}", i)?;
     }
     for i in 0..output_len {
