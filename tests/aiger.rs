@@ -1481,8 +1481,8 @@ fn test_from_aiger_bin() {
 fn test_aiger_map_to_string() {
     assert_eq!(
         concat!(
-            "8 0 10 - 12 - 14 - 16 1 2 - 4 - 6 2 34 false 26 5 ",
-            "40 true 36 false 42 !1 24 false 27 !5 32 false 41 false\n"
+            "8 0\n10 -\n12 -\n14 -\n16 1\n2 -\n4 -\n6 2\n34 false\n26 5\n",
+            "40 true\n36 false\n42 !1\n24 false\n27 !5\n32 false\n41 false\n"
         )
         .to_string(),
         aiger::aiger_map_to_string(&[

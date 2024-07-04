@@ -15,13 +15,14 @@ pub mod verilog;
 pub mod vhdl;
 
 pub fn map_to_string<T: ToString>(map: &[Option<T>]) -> String {
-    map.into_iter()
-        .map(|x| {
-            x.as_ref()
-                .map(|x| (*x).to_string())
-                .unwrap_or("-".to_string())
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-        + "\n"
+    let mut out = String::new();
+    for t in map {
+        if let Some(t) = t {
+            out += &t.to_string();
+        } else {
+            out += "-";
+        }
+        out.push('\n');
+    }
+    out
 }

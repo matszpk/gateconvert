@@ -136,11 +136,14 @@ impl Display for AIGEREntry {
 }
 
 pub fn aiger_map_to_string(map: &[(usize, AIGEREntry)]) -> String {
-    map.into_iter()
-        .map(|(l, x)| format!("{} {}", l, x))
-        .collect::<Vec<_>>()
-        .join(" ")
-        + "\n"
+    let mut out = String::new();
+    for (i, t) in map {
+        out += &i.to_string();
+        out.push(' ');
+        out += &t.to_string();
+        out.push('\n');
+    }
+    out
 }
 
 fn from_aiger_int(
