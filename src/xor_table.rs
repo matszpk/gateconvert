@@ -141,11 +141,11 @@ pub fn gen_table_circuit_bool(
     let table_len = table.len();
     assert_eq!(table_len.count_ones(), 1);
     let input_len = (usize::BITS - table_len.leading_zeros() - 1) as usize;
-    let input = if !int_input.is_empty() {
-        UDynExprNode::from_boolexprs(int_input)
-            .concat(UDynExprNode::variable(ec.clone(), input_len))
+    let input = UDynExprNode::variable(ec.clone(), input_len);
+    let all_input = if !int_input.is_empty() {
+        UDynExprNode::from_boolexprs(int_input).concat(input.clone())
     } else {
-        UDynExprNode::variable(ec.clone(), input_len)
+        input.clone()
     };
     let table = table
         .into_iter()
@@ -154,7 +154,7 @@ pub fn gen_table_circuit_bool(
     let mut temp_elem_outputs = vec![];
     dynint_extend_prep_xor_table(&mut xor_elem_outputs, &mut temp_elem_outputs, table);
     let output = dynint_xor_table(ec.clone(), input.clone(), xor_elem_outputs);
-    output.to_translated_circuit_with_map(input.iter())
+    output.to_translated_circuit_with_map(all_input.iter())
 }
 
 #[cfg(test)]

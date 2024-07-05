@@ -20,7 +20,6 @@ static PERFECT_4INPUT_CIRCUITS_LINES: Vec<&'static str> =
     PERFECT_4INPUT_CIRCUITS.split('\n').collect::<Vec<_>>();
 
 fn parse_perfect_circuit_line(line: &str) -> (u32, Vec<usize>, Circuit<usize>) {
-    println!("Line: {}", line);
     let num_end = line.bytes().position(|x| !x.is_ascii_digit()).unwrap();
     let value = line[0..num_end].parse().unwrap();
     let mut line = line[num_end..].trim_start();
@@ -103,15 +102,14 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
         TableCircuit::Value(true)
     } else if table_len > 16 {
         callsys(|| {
-            let all_inputs = UDynVarSys::var(table_len_bits);
-            let int_inputs = all_inputs.subvalue(0, 4); // get lowest 4-bit of input
+            let int_inputs = UDynVarSys::var(4); // get lowest 4-bit of input
             let ec = get_expr_creator_sys();
             // generate expression table from perfect circuits
             let expr_table = (0..table_len >> 4)
                 .map(|i| {
-                    let cur_val_table = &table[(i << 4)..(i << 4) + 1];
+                    let cur_val_table = &table[(i << 4)..(i << 4) + 16];
                     let value = cur_val_table
-                        .iter()
+                        .into_iter()
                         .enumerate()
                         .fold(0u16, |a, (b, v)| a | (u16::from(*v) << b));
                     gen_perfect_expr(value, &int_inputs).into()
@@ -251,5 +249,6 @@ mod tests {
         gen_xor_booltable_circuit_and_check("01100110_01000100");
         gen_xor_booltable_circuit_and_check("01011111_10100101");
         gen_xor_booltable_circuit_and_check("10111011_10111011");
+        gen_xor_booltable_circuit_and_check("00011010_01000100_01111001_01011010");
     }
 }
