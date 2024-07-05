@@ -1,4 +1,6 @@
 use crate::xor_table::*;
+use gategen::boolvar::*;
+use gategen::dynintvar::*;
 use gatesim::*;
 use static_init::dynamic;
 use std::str::FromStr;
@@ -54,6 +56,30 @@ fn parse_perfect_circuit_line(line: &str) -> (u32, Vec<usize>, Circuit<usize>) {
     let circuit = Circuit::from_str(line).unwrap();
     (value, inputs, circuit)
 }
+
+fn gen_perfect_circuit(value: u16, inputvar: UDynVarSys) -> BoolVarSys {
+    if value == 0 {
+        BoolVarSys::from(false)
+    } else if value == 0xffff {
+        BoolVarSys::from(true)
+    } else {
+        let (_, inputs, circuit) =
+            parse_perfect_circuit_line(PERFECT_4INPUT_CIRCUITS_LINES[(value as usize) - 1]);
+        BoolVarSys::from_circuit(circuit, inputs.into_iter().map(|i| inputvar.bit(i)))[0].clone()
+    }
+}
+
+// fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Option<usize>>) {
+//     let table_len = table.len();
+//     let table_len_bits = usize::BITS - table_len_bits.leading_zeros() - 1;
+//     let
+//     assert_eq!(table_len.count_ones(), 1);
+//     if table_len >= 16 {
+//         (Circuit::new(0, [], []).unwrap(), vec![])
+//     } else {
+//         let value = table[i].iter().enumerate().fold(0u16, |a, (b, v)| a | (v << b));
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
