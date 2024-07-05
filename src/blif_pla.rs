@@ -69,11 +69,23 @@ fn gen_perfect_circuit(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
     }
 }
 
-fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Option<usize>>) {
+#[derive(Clone, Debug)]
+pub enum TableCircuit {
+    Value(bool),
+    Circuit((Circuit<usize>, Vec<Option<usize>>)),
+}
+
+fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
     let table_len = table.len();
     let table_len_bits = (usize::BITS - table_len.leading_zeros() - 1) as usize;
     assert_eq!(table_len.count_ones(), 1);
-    if table_len >= 16 {
+    if table.iter().all(|x| !*x) {
+        // if all elements in table are false
+        TableCircuit::Value(false)
+    } else if table.iter().all(|x| *x) {
+        // if all elements in table are true
+        TableCircuit::Value(true)
+    } else if table_len >= 16 {
         let all_inputs = UDynVarSys::var(table_len_bits);
         let int_inputs = all_inputs.subvalue(0, 4); // get lowest 4-bit of input
         let ec = get_expr_creator_sys();
@@ -89,11 +101,11 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Op
             })
             .collect::<Vec<_>>();
         // generate table by using xor_table
-        gen_table_circuit_bool(
+        TableCircuit::Circuit(gen_table_circuit_bool(
             ec,
             int_inputs.iter().map(|v| v.into()).collect::<Vec<_>>(),
             expr_table,
-        )
+        ))
     } else {
         // table_len is power of two.
         let mask = table_len - 1;
@@ -102,7 +114,7 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Op
         let inputs = UDynVarSys::var(table_len_bits);
         let value = (0..16).fold(0u16, |a, b| a | (u16::from(table[b & mask]) << b));
         let output = gen_perfect_circuit(value, &inputs);
-        output.to_translated_circuit_with_map(inputs.iter())
+        TableCircuit::Circuit(output.to_translated_circuit_with_map(inputs.iter()))
     }
 }
 
