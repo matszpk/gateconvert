@@ -133,7 +133,63 @@ pub fn dynint_extend_prep_xor_table<T, I, const SIGN: bool>(
     }
 }
 
-pub fn gen_table_circuit_bool(
+//              RESULT
+//        /-----      ---\
+//       XC0             XC4
+//    /--   --\       /--   --\
+//   XB0     XB2     XB4     XB6
+//  /   \   /   \   /   \   /   \
+// XA0 XA1 XA2 XA3 XA4 XA5 XA6 XA7
+//
+// RESULT=A0,A0=XA0
+// RESULT=A1,A1=XA0^XA1,XA1=XA0^A1
+// RESULT=A2,A2=XA0^XA2,XA2=XA0^A2
+// RESULT=A3,A3=XB0^XA2^XA3,XB0=XA0^XA1,XA3=XB0^XA2^A3
+// RESULT=A4,A2=XA0^XA4,XA4=XA0^A4
+// RESULT=A5,A5=XB0^XA4^XA5,XB0=XA0^XA1,XA5=XB0^XA4^A5
+// RESULT=A6,A6=XC0^XA4^XA6,XC0=XA0^XA2,XA6=XC0^XA4^A6
+// RESULT=A7,A7=XC0^XB4^XA6^XA7,XC0=XB0^XB2,XB2=XA2^XA3,XB4=XA4^XA5,XA7=XC0^XB4^XA6^A7
+pub fn type_extend_prep_xor_table<T, I>(out: &mut Vec<T>, temp_out: &mut Vec<Vec<T>>, table_iter: I)
+where
+    T: Clone + std::ops::BitXorAssign,
+    I: IntoIterator<Item = T>,
+{
+    let initial_len = out.len();
+
+    for (i, v) in table_iter.into_iter().enumerate() {
+        let i = i + initial_len;
+        if i.count_ones() == 1 {
+            //println!("XX: {}", i);
+            // add next level to previous temps
+            for v in temp_out.iter_mut() {
+                //println!("XXZZ: {} {} {}", i, v.len(), j);
+                v.push(v.last().unwrap().clone());
+            }
+        }
+        let mut xv = v.clone();
+        temp_out.push(vec![]);
+        temp_out[i].push(v.clone());
+        if i != 0 {
+            let bit_num = (usize::BITS - i.leading_zeros() - 1) as usize;
+            //println!("Bitnum:: {} {}", bit_num, i);
+            for bit in (0..=bit_num).rev() {
+                let shift = 1 << bit;
+                if (i & shift) != 0 {
+                    xv ^= temp_out[i ^ shift][bit].clone();
+                }
+                // push to temp_out (tree) - after reverse first level is final XAxxx
+                // next are XBxxxx.
+                temp_out[i].push(xv.clone());
+            }
+        }
+        // reverse to make correct order of levels in temp_out.
+        temp_out[i].reverse();
+        out.push(xv.clone());
+    }
+}
+
+// version to make xor_table circuit for table already prepared for xor_table
+pub fn gen_table_circuit_bool_prep(
     ec: Rc<RefCell<ExprCreatorSys>>,
     int_input: Vec<BoolExprNode<isize>>,
     table: Vec<BoolExprNode<isize>>,
@@ -150,10 +206,7 @@ pub fn gen_table_circuit_bool(
     let table = table
         .into_iter()
         .map(|x| UDynExprNode::filled_expr(1, x.clone()));
-    let mut xor_elem_outputs = vec![];
-    let mut temp_elem_outputs = vec![];
-    dynint_extend_prep_xor_table(&mut xor_elem_outputs, &mut temp_elem_outputs, table);
-    let output = dynint_xor_table(ec.clone(), input.clone(), xor_elem_outputs);
+    let output = dynint_xor_table(ec.clone(), input.clone(), table);
     output.to_translated_circuit_with_map(all_input.iter())
 }
 

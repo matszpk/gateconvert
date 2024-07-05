@@ -102,21 +102,35 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
         TableCircuit::Value(true)
     } else if table_len > 16 {
         callsys(|| {
+            // prepare real table for XOR table
+            let mut valtable = vec![0u16; table.len() >> 4];
+            for i in 0..table_len >> 4 {
+                let cur_val_table = &table[(i << 4)..(i << 4) + 16];
+                let value = cur_val_table
+                    .into_iter()
+                    .enumerate()
+                    .fold(0u16, |a, (b, v)| a | (u16::from(*v) << b));
+                valtable[i] = value;
+            }
+            let mut xor_elem_outputs: Vec<u16> = vec![];
+            let mut temp_elem_outputs: Vec<Vec<u16>> = vec![];
+            type_extend_prep_xor_table(
+                &mut xor_elem_outputs,
+                &mut temp_elem_outputs,
+                valtable.iter().copied(),
+            );
+            // generate perfect circuit for real table for XOR table.
             let int_inputs = UDynVarSys::var(4); // get lowest 4-bit of input
             let ec = get_expr_creator_sys();
             // generate expression table from perfect circuits
             let expr_table = (0..table_len >> 4)
                 .map(|i| {
-                    let cur_val_table = &table[(i << 4)..(i << 4) + 16];
-                    let value = cur_val_table
-                        .into_iter()
-                        .enumerate()
-                        .fold(0u16, |a, (b, v)| a | (u16::from(*v) << b));
+                    let value = xor_elem_outputs[i];
                     gen_perfect_expr(value, &int_inputs).into()
                 })
                 .collect::<Vec<_>>();
             // generate table by using xor_table
-            TableCircuit::Circuit(gen_table_circuit_bool(
+            TableCircuit::Circuit(gen_table_circuit_bool_prep(
                 ec,
                 int_inputs.iter().map(|v| v.into()).collect::<Vec<_>>(),
                 expr_table,
