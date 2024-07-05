@@ -133,18 +133,14 @@ pub fn dynint_extend_prep_xor_table<T, I, const SIGN: bool>(
     }
 }
 
-pub fn gen_table_circuit(
-    ec: Rc<RefCell<ExprCreator32>>,
-    output_len: usize,
-    table: Vec<u32>,
-) -> Circuit<u32> {
+pub fn gen_table_circuit_bool(ec: Rc<RefCell<ExprCreatorSys>>, table: Vec<bool>) -> Circuit<usize> {
     let table_len = table.len();
     assert_eq!(table_len.count_ones(), 1);
     let input_len = (usize::BITS - table_len.leading_zeros() - 1) as usize;
     let input = UDynExprNode::variable(ec.clone(), input_len);
     let table = table
         .into_iter()
-        .map(|x| UDynExprNode::try_constant_n(ec.clone(), output_len, x).unwrap());
+        .map(|x| UDynExprNode::try_constant_n(ec.clone(), 1, u32::from(x)).unwrap());
     let mut xor_elem_outputs = vec![];
     let mut temp_elem_outputs = vec![];
     dynint_extend_prep_xor_table(&mut xor_elem_outputs, &mut temp_elem_outputs, table);
