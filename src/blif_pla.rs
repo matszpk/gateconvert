@@ -101,7 +101,7 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
     } else if table.iter().all(|x| *x) {
         // if all elements in table are true
         TableCircuit::Value(true)
-    } else if table_len >= 16 {
+    } else if table_len > 16 {
         callsys(|| {
             let all_inputs = UDynVarSys::var(table_len_bits);
             let int_inputs = all_inputs.subvalue(0, 4); // get lowest 4-bit of input
@@ -192,11 +192,18 @@ mod tests {
         println!("Check for {:?}, {:?}", exp_table, table_circuit);
         match table_circuit {
             TableCircuit::Circuit((circuit, inputs)) => {
+                // println!("Inputsfilter: {:?}", inputs
+                //                 .iter()
+                //                 .enumerate()
+                //                 .filter_map(|(i, x)| (*x).map(|_| i)).collect::<Vec<_>>());
                 for (i, expv) in exp_table.into_iter().enumerate() {
                     let out = circuit.eval(
+                        // convert from inputs in form [None,...,Some(new_index),...]
+                        // to [....,old_index,..]
                         inputs
                             .iter()
-                            .filter_map(|x| *x)
+                            .enumerate()
+                            .filter_map(|(i, x)| (*x).map(|_| i))
                             .map(|b| ((i >> b) & 1) != 0),
                     );
                     assert_eq!(*expv, out[0], "{}", i);
@@ -231,5 +238,18 @@ mod tests {
         gen_xor_booltable_circuit_and_check(&std::iter::repeat('0').take(1024).collect::<String>());
         gen_xor_booltable_circuit_and_check(&std::iter::repeat('1').take(1024).collect::<String>());
         gen_xor_booltable_circuit_and_check("01");
+        gen_xor_booltable_circuit_and_check("10");
+        gen_xor_booltable_circuit_and_check("0001");
+        gen_xor_booltable_circuit_and_check("0010");
+        gen_xor_booltable_circuit_and_check("0100");
+        gen_xor_booltable_circuit_and_check("1000");
+        gen_xor_booltable_circuit_and_check("0110");
+        gen_xor_booltable_circuit_and_check("1001");
+        gen_xor_booltable_circuit_and_check("0101");
+        gen_xor_booltable_circuit_and_check("1100");
+        gen_xor_booltable_circuit_and_check("01100100_01001101");
+        gen_xor_booltable_circuit_and_check("01100110_01000100");
+        gen_xor_booltable_circuit_and_check("01011111_10100101");
+        gen_xor_booltable_circuit_and_check("10111011_10111011");
     }
 }
