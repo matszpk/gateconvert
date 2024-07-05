@@ -133,21 +133,28 @@ pub fn dynint_extend_prep_xor_table<T, I, const SIGN: bool>(
     }
 }
 
-pub fn gen_table_circuit_bool(ec: Rc<RefCell<ExprCreatorSys>>, table: Vec<bool>) -> Circuit<usize> {
+pub fn gen_table_circuit_bool(
+    ec: Rc<RefCell<ExprCreatorSys>>,
+    int_input: Vec<BoolExprNode<isize>>,
+    table: Vec<BoolExprNode<isize>>,
+) -> (Circuit<usize>, Vec<Option<usize>>) {
     let table_len = table.len();
     assert_eq!(table_len.count_ones(), 1);
     let input_len = (usize::BITS - table_len.leading_zeros() - 1) as usize;
-    let input = UDynExprNode::variable(ec.clone(), input_len);
+    let input = if !int_input.is_empty() {
+        UDynExprNode::from_boolexprs(int_input)
+            .concat(UDynExprNode::variable(ec.clone(), input_len))
+    } else {
+        UDynExprNode::variable(ec.clone(), input_len)
+    };
     let table = table
         .into_iter()
-        .map(|x| UDynExprNode::try_constant_n(ec.clone(), 1, u32::from(x)).unwrap());
+        .map(|x| UDynExprNode::filled_expr(1, x.clone()));
     let mut xor_elem_outputs = vec![];
     let mut temp_elem_outputs = vec![];
     dynint_extend_prep_xor_table(&mut xor_elem_outputs, &mut temp_elem_outputs, table);
     let output = dynint_xor_table(ec.clone(), input.clone(), xor_elem_outputs);
-    let (circuit, input_map) = output.to_circuit();
-    let input_list = input_map_to_input_list(input_map, input.iter());
-    translate_inputs_rev(circuit, input_list)
+    output.to_translated_circuit_with_map(input.iter())
 }
 
 #[cfg(test)]
