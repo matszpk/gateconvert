@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 gatesim = { version="0.1.0", path="../gatesim" }
+gateutil = { version="0.1.0", path="../gateutil" }
 gategen = { version="0.1.0", path="../gategen" }
 clap = { version = "4.5.3", features = ["derive"] }
 cnfgen = "0.4.0"

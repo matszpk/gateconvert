@@ -1,5 +1,7 @@
 use gatesim::*;
 
+use crate::blif_pla::*;
+
 use std::collections::BTreeMap;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 
