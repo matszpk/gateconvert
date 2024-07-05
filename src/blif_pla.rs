@@ -57,11 +57,11 @@ fn parse_perfect_circuit_line(line: &str) -> (u32, Vec<usize>, Circuit<usize>) {
     (value, inputs, circuit)
 }
 
-fn gen_perfect_circuit(value: u16, inputvar: UDynVarSys) -> BoolVarSys {
+fn gen_perfect_circuit(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
     if value == 0 {
-        BoolVarSys::from(false)
+        false.into()
     } else if value == 0xffff {
-        BoolVarSys::from(true)
+        true.into()
     } else {
         let (_, inputs, circuit) =
             parse_perfect_circuit_line(PERFECT_4INPUT_CIRCUITS_LINES[(value as usize) - 1]);
@@ -69,17 +69,42 @@ fn gen_perfect_circuit(value: u16, inputvar: UDynVarSys) -> BoolVarSys {
     }
 }
 
-// fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Option<usize>>) {
-//     let table_len = table.len();
-//     let table_len_bits = usize::BITS - table_len_bits.leading_zeros() - 1;
-//     let
-//     assert_eq!(table_len.count_ones(), 1);
-//     if table_len >= 16 {
-//         (Circuit::new(0, [], []).unwrap(), vec![])
-//     } else {
-//         let value = table[i].iter().enumerate().fold(0u16, |a, (b, v)| a | (v << b));
-//     }
-// }
+fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> (Circuit<usize>, Vec<Option<usize>>) {
+    let table_len = table.len();
+    let table_len_bits = (usize::BITS - table_len.leading_zeros() - 1) as usize;
+    assert_eq!(table_len.count_ones(), 1);
+    if table_len >= 16 {
+        let all_inputs = UDynVarSys::var(table_len_bits);
+        let int_inputs = all_inputs.subvalue(0, 4); // get lowest 4-bit of input
+        let ec = get_expr_creator_sys();
+        // generate expression table from perfect circuits
+        let expr_table = (0..table_len >> 4)
+            .map(|i| {
+                let cur_val_table = &table[(i << 4)..(i << 4) + 1];
+                let value = cur_val_table
+                    .iter()
+                    .enumerate()
+                    .fold(0u16, |a, (b, v)| a | (u16::from(*v) << b));
+                gen_perfect_circuit(value, &int_inputs).into()
+            })
+            .collect::<Vec<_>>();
+        // generate table by using xor_table
+        gen_table_circuit_bool(
+            ec,
+            int_inputs.iter().map(|v| v.into()).collect::<Vec<_>>(),
+            expr_table,
+        )
+    } else {
+        // table_len is power of two.
+        let mask = table_len - 1;
+        // with using indexing (b & mask) with iterator (0..16) we just duplicate
+        // lowest bits
+        let inputs = UDynVarSys::var(table_len_bits);
+        let value = (0..16).fold(0u16, |a, b| a | (u16::from(table[b & mask]) << b));
+        let output = gen_perfect_circuit(value, &inputs);
+        output.to_translated_circuit_with_map(inputs.iter())
+    }
+}
 
 #[cfg(test)]
 mod tests {
