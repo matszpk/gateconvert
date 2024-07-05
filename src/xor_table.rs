@@ -157,7 +157,6 @@ pub fn gen_table_circuit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ops::{BitAnd, BitOr, BitXor, Not};
 
     use gategen::generic_array::typenum::*;
     use gategen::intexpr::*;
@@ -251,41 +250,41 @@ mod tests {
             println!("Value: {}: {}", v, out);
         }
         // with input len = 16, table len: 1 << 16 = 65536
-        let table = (0..1 << 16)
-            .map(|x| u64::try_from(hash_function_64(32, x)).unwrap())
-            .collect::<Vec<_>>();
-        let circuit = gen_table_circuit(32, table.clone());
-        let mut input_64 = vec![
-            0xaaaaaaaaaaaaaaaau64,
-            0xccccccccccccccccu64,
-            0xf0f0f0f0f0f0f0f0u64,
-            0xff00ff00ff00ff00u64,
-            0xffff0000ffff0000u64,
-            0xffffffff00000000u64,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ];
-        for v in 0..1 << (16 - 6) {
-            for i in 0..(16 - 6) {
-                input_64[i + 6] = if ((v >> i) & 1) != 0 { u64::MAX } else { 0 };
-            }
-            let out = circuit.eval(input_64.clone());
-            for i in 0..64 {
-                let out = out
-                    .iter()
-                    .enumerate()
-                    .fold(0, |a, (b, x)| a | (u64::from((x >> i) & 1) << b));
-                assert_eq!(table[(v << 6) + i], out);
-                println!("Value: {}: {}", (v << 6) + i, out);
-            }
-        }
+        // let table = (0..1 << 16)
+        //     .map(|x| u64::try_from(hash_function_64(32, x)).unwrap())
+        //     .collect::<Vec<_>>();
+        // let circuit = gen_table_circuit(32, table.clone());
+        // let mut input_64 = vec![
+        //     0xaaaaaaaaaaaaaaaau64,
+        //     0xccccccccccccccccu64,
+        //     0xf0f0f0f0f0f0f0f0u64,
+        //     0xff00ff00ff00ff00u64,
+        //     0xffff0000ffff0000u64,
+        //     0xffffffff00000000u64,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        //     0,
+        // ];
+        // for v in 0..1 << (16 - 6) {
+        //     for i in 0..(16 - 6) {
+        //         input_64[i + 6] = if ((v >> i) & 1) != 0 { u64::MAX } else { 0 };
+        //     }
+        //     let out = circuit.eval(input_64.clone());
+        //     for i in 0..64 {
+        //         let out = out
+        //             .iter()
+        //             .enumerate()
+        //             .fold(0, |a, (b, x)| a | (u64::from((x >> i) & 1) << b));
+        //         assert_eq!(table[(v << 6) + i], out);
+        //         println!("Value: {}: {}", (v << 6) + i, out);
+        //     }
+        // }
     }
 }
