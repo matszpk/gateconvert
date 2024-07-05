@@ -250,5 +250,12 @@ mod tests {
         gen_xor_booltable_circuit_and_check("01011111_10100101");
         gen_xor_booltable_circuit_and_check("10111011_10111011");
         gen_xor_booltable_circuit_and_check("00011010_01000100_01111001_01011010");
+        gen_xor_booltable_circuit_and_check("11001100_00110011_10101010_01010101");
+        gen_xor_booltable_circuit_and_check(concat!(
+            "00010101_00010101_11100110_11011110",
+            "11001011_10001000_11110111_11010111",
+            "00111001_11011001_00001000_00010111",
+            "11101101_01100010_01100010_11101111",
+        ));
     }
 }
