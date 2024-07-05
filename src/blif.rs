@@ -105,11 +105,18 @@ impl<R: Read> BLIFTokensReader<R> {
         while self.br.read_line(&mut line)? != 0 {
             empty = false;
             self.line_no += 1;
+            // remove line delimiter
+            if line.ends_with('\n') {
+                line.pop();
+                if line.ends_with('\r') {
+                    line.pop();
+                }
+            }
             if let Some(p) = line.bytes().position(|x| x == b'#') {
                 // remove comment
                 line.truncate(p);
                 break;
-            } else if let Some(b'\\') = line.bytes().last() {
+            } else if line.ends_with('\\') {
                 line.pop(); // remove '\\'
             } else {
                 break;
@@ -164,6 +171,14 @@ mod tests {
         assert_eq!(
             tokens_to_vectors([(1, vec!["ala", "bum", "bm"]), (2, vec!["beta", "xx"])]),
             blif_reader_helper(" ala bum bm  \n  beta xx \n")
+        );
+        assert_eq!(
+            tokens_to_vectors([(1, vec!["ala", "bum"]), (2, vec!["beta", "xx"])]),
+            blif_reader_helper(" ala bum # bm  \n  beta xx # yyy \n")
+        );
+        assert_eq!(
+            tokens_to_vectors([(1, vec!["ala", "bum", "bm", "beta", "xx"])]),
+            blif_reader_helper(" ala bum bm  \\\n  beta xx \n")
         );
     }
 }
