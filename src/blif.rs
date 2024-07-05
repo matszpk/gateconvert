@@ -184,5 +184,33 @@ mod tests {
             tokens_to_vectors([(1, vec!["ala", "bum", "bm"]), (2, vec!["beta", "xx"])]),
             blif_reader_helper(" ala bum bm # comment \\\n  beta xx \n")
         );
+        assert_eq!(
+            tokens_to_vectors([
+                (1, vec![".model", "simple"]),
+                (2, vec![".inputs", "a", "b"]),
+                (3, vec![".outputs", "c"]),
+                (4, vec![".names", "a", "b", "c"]),
+                (5, vec!["11", "1"]),
+                (6, vec![".end"]),
+                (7, vec![]),
+                (8, vec![]),
+                (9, vec![".names", "a", "b", "c"]),
+                (11, vec!["11", "1"])
+            ]),
+            blif_reader_helper(
+                r##".model simple
+.inputs a b
+.outputs c
+.names a b c      # .names described later
+11 1
+.end
+
+# unnamed model
+.names a b \
+c   # ‘\’ here only to demonstrate its use
+11 1
+"##
+            )
+        );
     }
 }
