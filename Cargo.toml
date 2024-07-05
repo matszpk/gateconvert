@@ -15,6 +15,7 @@ gatesim = { version="0.1.0", path="../gatesim" }
 gateutil = { version="0.1.0", path="../gateutil" }
 gategen = { version="0.1.0", path="../gategen" }
 clap = { version = "4.5.3", features = ["derive"] }
+static_init = "1.0"
 cnfgen = "0.4.0"
 flussab-cnf = "0.3"
 flussab-aiger = "0.1"
