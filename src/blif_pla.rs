@@ -69,7 +69,7 @@ fn gen_perfect_expr(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TableCircuit {
     Value(bool),
     Circuit((Circuit<usize>, Vec<Option<usize>>)),
@@ -178,5 +178,52 @@ mod tests {
             ),
             parse_perfect_circuit_line(PERFECT_4INPUT_CIRCUITS_LINES[0xdada - 1])
         );
+    }
+
+    fn str_to_vecbool(s: &str) -> Vec<bool> {
+        s.chars()
+            .filter(|x| *x == '0' || *x == '1')
+            .map(|x| x == '1')
+            .collect()
+    }
+
+    fn check_circuit(exp_table: &[bool], table_circuit: TableCircuit) {
+        println!("Check for {:?}, {:?}", exp_table, table_circuit);
+        match table_circuit {
+            TableCircuit::Circuit((circuit, inputs)) => {
+                for (i, expv) in exp_table.into_iter().enumerate() {
+                    let out = circuit.eval(
+                        inputs
+                            .iter()
+                            .filter_map(|x| *x)
+                            .map(|b| ((i >> b) & 1) != 0),
+                    );
+                    assert_eq!(*expv, out[0], "{}", i);
+                }
+            }
+            TableCircuit::Value(val) => {
+                assert!(exp_table.iter().all(|x| *x == val));
+            }
+        }
+    }
+
+    fn gen_xor_booltable_circuit_and_check(s: &str) {
+        let table = str_to_vecbool(s);
+        let table_circuit = gen_booltable_circuit_by_xor_table(&table);
+        check_circuit(&table, table_circuit);
+    }
+
+    #[test]
+    fn test_gen_booltable_circuit_by_xor_table() {
+        gen_xor_booltable_circuit_and_check("0");
+        gen_xor_booltable_circuit_and_check("1");
+        gen_xor_booltable_circuit_and_check("00");
+        gen_xor_booltable_circuit_and_check("11");
+        gen_xor_booltable_circuit_and_check("0000");
+        gen_xor_booltable_circuit_and_check("1111");
+        gen_xor_booltable_circuit_and_check("00000000");
+        gen_xor_booltable_circuit_and_check("11111111");
+        gen_xor_booltable_circuit_and_check("00000000_00000000");
+        gen_xor_booltable_circuit_and_check("11111111_11111111");
     }
 }
