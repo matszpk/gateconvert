@@ -180,5 +180,9 @@ mod tests {
             tokens_to_vectors([(1, vec!["ala", "bum", "bm", "beta", "xx"])]),
             blif_reader_helper(" ala bum bm  \\\n  beta xx \n")
         );
+        assert_eq!(
+            tokens_to_vectors([(1, vec!["ala", "bum", "bm"]), (2, vec!["beta", "xx"])]),
+            blif_reader_helper(" ala bum bm # comment \\\n  beta xx \n")
+        );
     }
 }
