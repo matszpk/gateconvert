@@ -225,5 +225,9 @@ mod tests {
         gen_xor_booltable_circuit_and_check("11111111");
         gen_xor_booltable_circuit_and_check("00000000_00000000");
         gen_xor_booltable_circuit_and_check("11111111_11111111");
+        gen_xor_booltable_circuit_and_check("00000000_00000000_00000000_00000000");
+        gen_xor_booltable_circuit_and_check("11111111_11111111_11111111_11111111");
+        gen_xor_booltable_circuit_and_check(&std::iter::repeat('0').take(1024).collect::<String>());
+        gen_xor_booltable_circuit_and_check(&std::iter::repeat('1').take(1024).collect::<String>());
     }
 }
