@@ -1,7 +1,7 @@
 use gatesim::*;
 
 use std::collections::BTreeMap;
-use std::io::{self, BufReader, BufWriter, Read, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 
 pub fn to_blif(
     circuit: &Circuit<usize>,
@@ -83,20 +83,87 @@ pub fn to_blif(
 // then try to optimize table by circuit DB and XOR-table.
 // if lines are: 'xxxxx1xx0xxxx' and 'xxxxx0xx1xxxx' then use XOR.
 
-// struct BLIFLineReader<R: Read> {
-//     br: BufReader<R>,
-//     line_no: usize,
-//     line: String,
-// }
-//
-// impl<R: Read> BLIFLineReader<R> {
-//     fn new(r: R) -> Self {
-//         Self {
-//             br: BufReader::new(r),
-//             line_no: 1,
-//             line: String::new(),
-//         }
-//     }
-//
-//     fn next_line(&mut self) -> Result<String,
-// }
+// Read lines. Concatenate lines, remove comments and trim lines.
+struct BLIFTokensReader<R: Read> {
+    br: BufReader<R>,
+    line_no: usize,
+}
+
+impl<R: Read> BLIFTokensReader<R> {
+    fn new(r: R) -> Self {
+        Self {
+            br: BufReader::new(r),
+            line_no: 1,
+        }
+    }
+
+    // returns line number and tokens
+    fn read_tokens(&mut self) -> io::Result<Option<(usize, Vec<String>)>> {
+        let mut line = String::new();
+        let current_line_no = self.line_no;
+        let mut empty = true;
+        while self.br.read_line(&mut line)? != 0 {
+            empty = false;
+            self.line_no += 1;
+            if let Some(p) = line.bytes().position(|x| x == b'#') {
+                // remove comment
+                line.truncate(p);
+                break;
+            } else if let Some(b'\\') = line.bytes().last() {
+                line.pop(); // remove '\\'
+            } else {
+                break;
+            }
+        }
+        Ok(if !empty {
+            Some((
+                current_line_no,
+                line.trim()
+                    .split_whitespace()
+                    .map(|x| x.to_string())
+                    .collect(),
+            ))
+        } else {
+            None
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn blif_reader_helper(text: &str) -> Vec<(usize, Vec<String>)> {
+        let mut reader = BLIFTokensReader::new(text.as_bytes());
+        let mut lines = vec![];
+        while let Ok(Some(line)) = reader.read_tokens() {
+            lines.push(line);
+        }
+        lines
+    }
+
+    fn tokens_to_vectors<'a>(
+        lines: impl IntoIterator<Item = (usize, impl IntoIterator<Item = &'a str>)>,
+    ) -> Vec<(usize, Vec<String>)> {
+        lines
+            .into_iter()
+            .map(|(ln, tokens)| {
+                (
+                    ln,
+                    tokens
+                        .into_iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_blif_tokens_reader() {
+        assert_eq!(
+            tokens_to_vectors([(1, vec!["ala", "bum", "bm"]), (2, vec!["beta", "xx"])]),
+            blif_reader_helper(" ala bum bm  \n  beta xx \n")
+        );
+    }
+}
