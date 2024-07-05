@@ -1,7 +1,7 @@
 use gatesim::*;
 
 use std::collections::BTreeMap;
-use std::io::{BufWriter, Write};
+use std::io::{self, BufReader, BufWriter, Read, Write};
 
 pub fn to_blif(
     circuit: &Circuit<usize>,
@@ -9,7 +9,7 @@ pub fn to_blif(
     clock_num: usize,
     model_name: &str,
     out: &mut impl Write,
-) -> Result<(), std::io::Error> {
+) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
     assert!(state_len + clock_num <= input_len);
@@ -82,3 +82,21 @@ pub fn to_blif(
 // HINT to optimize PLA tables: if number 0 or 1 (not -) in PLA is greater than (2**inputs)/4
 // then try to optimize table by circuit DB and XOR-table.
 // if lines are: 'xxxxx1xx0xxxx' and 'xxxxx0xx1xxxx' then use XOR.
+
+// struct BLIFLineReader<R: Read> {
+//     br: BufReader<R>,
+//     line_no: usize,
+//     line: String,
+// }
+//
+// impl<R: Read> BLIFLineReader<R> {
+//     fn new(r: R) -> Self {
+//         Self {
+//             br: BufReader::new(r),
+//             line_no: 1,
+//             line: String::new(),
+//         }
+//     }
+//
+//     fn next_line(&mut self) -> Result<String,
+// }

@@ -1,7 +1,7 @@
 use gatesim::*;
 
 use std::collections::BTreeMap;
-use std::io::{BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 
 use crate::vbinopcircuit::*;
 use crate::vcircuit::VGateFunc;
@@ -12,7 +12,7 @@ pub fn to_verilog(
     module_name: &str,
     optimize_negs: bool,
     out: &mut impl Write,
-) -> Result<(), std::io::Error> {
+) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
 

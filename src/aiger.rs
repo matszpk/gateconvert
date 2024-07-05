@@ -5,14 +5,14 @@ use gatesim::*;
 
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Display};
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 
 pub fn to_aiger(
     circuit: &Circuit<usize>,
     state_len: usize,
     out: &mut impl Write,
     binmode: bool,
-) -> Result<(), std::io::Error> {
+) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
     let outputs = circuit.outputs();

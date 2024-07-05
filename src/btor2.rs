@@ -1,7 +1,7 @@
 use gatesim::*;
 
 use std::collections::HashMap;
-use std::io::{BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 
 use crate::vcircuit::*;
 
@@ -9,7 +9,7 @@ pub fn to_btor2(
     circuit: &Circuit<usize>,
     state_len: usize,
     out: &mut impl Write,
-) -> Result<(), std::io::Error> {
+) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
     assert!(state_len <= input_len);
