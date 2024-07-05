@@ -57,7 +57,7 @@ fn parse_perfect_circuit_line(line: &str) -> (u32, Vec<usize>, Circuit<usize>) {
     (value, inputs, circuit)
 }
 
-fn gen_perfect_circuit(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
+fn gen_perfect_expr(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
     if value == 0 {
         false.into()
     } else if value == 0xffff {
@@ -73,6 +73,22 @@ fn gen_perfect_circuit(value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
 pub enum TableCircuit {
     Value(bool),
     Circuit((Circuit<usize>, Vec<Option<usize>>)),
+}
+
+fn gen_perfect_circuit(value: u16, inputvar: &UDynVarSys) -> TableCircuit {
+    if value == 0 {
+        TableCircuit::Value(false)
+    } else if value == 0xffff {
+        TableCircuit::Value(false)
+    } else {
+        let (_, inputs, circuit) =
+            parse_perfect_circuit_line(PERFECT_4INPUT_CIRCUITS_LINES[(value as usize) - 1]);
+        let mut out_inputs = vec![None; 4];
+        for (newi, i) in inputs.into_iter().enumerate() {
+            out_inputs[i] = Some(newi);
+        }
+        TableCircuit::Circuit((circuit, out_inputs))
+    }
 }
 
 fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
@@ -97,7 +113,7 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
                     .iter()
                     .enumerate()
                     .fold(0u16, |a, (b, v)| a | (u16::from(*v) << b));
-                gen_perfect_circuit(value, &int_inputs).into()
+                gen_perfect_expr(value, &int_inputs).into()
             })
             .collect::<Vec<_>>();
         // generate table by using xor_table
@@ -113,8 +129,12 @@ fn gen_booltable_circuit_by_xor_table(table: &[bool]) -> TableCircuit {
         // lowest bits
         let inputs = UDynVarSys::var(table_len_bits);
         let value = (0..16).fold(0u16, |a, b| a | (u16::from(table[b & mask]) << b));
-        let output = gen_perfect_circuit(value, &inputs);
-        TableCircuit::Circuit(output.to_translated_circuit_with_map(inputs.iter()))
+        let mut out = gen_perfect_circuit(value, &inputs);
+        if let TableCircuit::Circuit((_, input)) = &mut out {
+            // fix size of inputs
+            input.resize(table_len_bits, None);
+        }
+        out
     }
 }
 
