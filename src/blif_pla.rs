@@ -191,6 +191,49 @@ enum PLACell {
 //    it possible to gen more ranges for x-particular cells in PLA entry:
 //    range for [U,U,.....], range for [1,U,.....], range for [U,1,.....], range for [1,1,.....]
 
+fn pla_to_truth_table(
+    var_num: usize,
+    set_value: bool,
+    pla: &[(Vec<PLACell>, bool, usize)],
+) -> Vec<bool> {
+    assert!(var_num < 63);
+    let mut out_table = vec![!set_value; 1 << var_num];
+    let mut cur_low_entry = vec![PLACell::Zero; var_num];
+    let mut cur_high_entry = vec![PLACell::Unknown; var_num];
+    for i in 0..1 << var_num {
+        let low = pla
+            .binary_search_by_key(&&cur_low_entry, |(cur_entry, _, _)| cur_entry)
+            .unwrap_or_else(|x| x);
+        let high = pla
+            .binary_search_by_key(&&cur_high_entry, |(cur_entry, _, _)| cur_entry)
+            .unwrap_or_else(|x| x);
+        let high = std::cmp::max(high, pla.len() - 1);
+        for (entry, _, _) in &pla[low..=high] {
+            if entry.iter().enumerate().all(|(b, c)| {
+                if ((i >> b) & 1) != 0 {
+                    *c != PLACell::Zero // if not zero
+                } else {
+                    *c != PLACell::One // if not one
+                }
+            }) {
+                out_table[i] = set_value;
+            }
+        }
+        // change cur_entry
+        for i in 0..var_num {
+            if cur_low_entry[i] == PLACell::Zero {
+                cur_low_entry[i] = PLACell::Unknown;
+                cur_high_entry[i] = PLACell::One;
+                break;
+            } else {
+                cur_low_entry[i] = PLACell::Zero;
+                cur_high_entry[i] = PLACell::Unknown;
+            }
+        }
+    }
+    vec![]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
