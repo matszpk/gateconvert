@@ -3,7 +3,7 @@ use gatesim::*;
 
 fn to_verilog_helper(circuit: Circuit<usize>, optimize_negs: bool) -> String {
     let mut out = vec![];
-    verilog::to_verilog(&circuit, "top", optimize_negs, &mut out).unwrap();
+    verilog::to_verilog(circuit, "top", optimize_negs, &mut out).unwrap();
     String::from_utf8(out).unwrap()
 }
 

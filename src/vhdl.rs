@@ -8,7 +8,7 @@ use crate::vcircuit::VGateFunc;
 use crate::VNegs::*;
 
 pub fn to_vhdl(
-    circuit: &Circuit<usize>,
+    circuit: Circuit<usize>,
     entity_name: &str,
     arch_name: &str,
     optimize_negs: bool,
@@ -18,7 +18,7 @@ pub fn to_vhdl(
     let output_len = circuit.outputs().len();
 
     let circuit = {
-        let mut circuit = VBinOpCircuit::from(circuit.clone());
+        let mut circuit = VBinOpCircuit::from(circuit);
         if optimize_negs {
             circuit.optimize_negs();
         }

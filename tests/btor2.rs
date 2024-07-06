@@ -3,7 +3,7 @@ use gatesim::*;
 
 fn to_btor2_helper(circuit: Circuit<usize>, state_len: usize) -> String {
     let mut out = vec![];
-    btor2::to_btor2(&circuit, state_len, &mut out).unwrap();
+    btor2::to_btor2(circuit, state_len, &mut out).unwrap();
     String::from_utf8(out).unwrap()
 }
 

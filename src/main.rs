@@ -197,7 +197,7 @@ fn main() {
             let circuit =
                 Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit).unwrap()).unwrap();
             let mut file = File::create(to_btor2.btor2).unwrap();
-            btor2::to_btor2(&circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
+            btor2::to_btor2(circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
         }
         Commands::ToBLIF(to_blif) => {
             let circuit =
@@ -217,7 +217,7 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
             let mut file = File::create(to_v.verilog).unwrap();
             verilog::to_verilog(
-                &circuit,
+                circuit,
                 &to_v.module_name.unwrap_or("top".to_string()),
                 !to_v.no_optimize_negs,
                 &mut file,
@@ -229,7 +229,7 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
             let mut file = File::create(to_v.vhdl).unwrap();
             vhdl::to_vhdl(
-                &circuit,
+                circuit,
                 &to_v.entity_name.unwrap_or("top".to_string()),
                 &to_v.architecture.unwrap_or("rtl".to_string()),
                 !to_v.no_optimize_negs,

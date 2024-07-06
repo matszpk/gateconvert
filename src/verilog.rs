@@ -8,7 +8,7 @@ use crate::vcircuit::VGateFunc;
 use crate::VNegs::*;
 
 pub fn to_verilog(
-    circuit: &Circuit<usize>,
+    circuit: Circuit<usize>,
     module_name: &str,
     optimize_negs: bool,
     out: &mut impl Write,
@@ -17,7 +17,7 @@ pub fn to_verilog(
     let output_len = circuit.outputs().len();
 
     let circuit = {
-        let mut circuit = VBinOpCircuit::from(circuit.clone());
+        let mut circuit = VBinOpCircuit::from(circuit);
         if optimize_negs {
             circuit.optimize_negs();
         }

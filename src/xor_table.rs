@@ -4,7 +4,6 @@ use gategen::boolexpr::*;
 use gategen::dynintexpr::*;
 use gategen::VarLit;
 use gatesim::*;
-use gateutil::*;
 
 use std::cell::RefCell;
 use std::env;
@@ -215,7 +214,7 @@ mod tests {
     use super::*;
 
     use gategen::generic_array::typenum::*;
-    use gategen::intexpr::*;
+    use gateutil::*;
 
     fn gen_table_circuit(output_len: usize, table: Vec<u64>) -> Circuit<usize> {
         let table_len = table.len();

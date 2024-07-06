@@ -3,7 +3,7 @@ use gatesim::*;
 
 fn to_vhdl_helper(circuit: Circuit<usize>, optimize_negs: bool) -> String {
     let mut out = vec![];
-    vhdl::to_vhdl(&circuit, "top", "behavior", optimize_negs, &mut out).unwrap();
+    vhdl::to_vhdl(circuit, "top", "behavior", optimize_negs, &mut out).unwrap();
     String::from_utf8(out).unwrap()
 }
 

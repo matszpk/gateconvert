@@ -5,16 +5,12 @@ use std::io::{self, BufWriter, Write};
 
 use crate::vcircuit::*;
 
-pub fn to_btor2(
-    circuit: &Circuit<usize>,
-    state_len: usize,
-    out: &mut impl Write,
-) -> io::Result<()> {
+pub fn to_btor2(circuit: Circuit<usize>, state_len: usize, out: &mut impl Write) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();
     assert!(state_len <= input_len);
     assert!(state_len <= output_len);
-    let circuit = VCircuit::to_op_and_ximpl_circuit(circuit.clone(), false);
+    let circuit = VCircuit::to_op_and_ximpl_circuit(circuit, false);
 
     let mut out = BufWriter::new(out);
     out.write(b"1 sort bitvec 1\n")?;
