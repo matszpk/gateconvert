@@ -115,6 +115,7 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
         TableCircuit::Value(true)
     } else if table_len > 16 {
         callsys(|| {
+            let mut perfect_expr_map = HashMap::<u16, BoolVarSys>::new();
             // prepare real table for XOR table
             let mut valtable = vec![0u16; table.len() >> 4];
             for i in 0..table_len >> 4 {
@@ -139,7 +140,15 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
             let expr_table = (0..table_len >> 4)
                 .map(|i| {
                     let value = xor_elem_outputs[i];
-                    gen_perfect_expr(cache, value, &int_inputs).into()
+                    let expr = if let Some(expr) = perfect_expr_map.get(&value) {
+                        println!("Copy of {}", value);
+                        expr.clone()
+                    } else {
+                        let expr = gen_perfect_expr(cache, value, &int_inputs);
+                        perfect_expr_map.insert(value, expr.clone());
+                        expr
+                    };
+                    expr.into()
                 })
                 .collect::<Vec<_>>();
             // generate table by using xor_table
@@ -214,7 +223,7 @@ mod tests {
     }
 
     fn check_circuit(exp_table: &[bool], table_circuit: TableCircuit) {
-        //println!("Check for {:?}, {:?}", exp_table, table_circuit.len());
+        // println!("Check for {:?}", exp_table.len());
         match table_circuit {
             TableCircuit::Circuit((circuit, inputs)) => {
                 // println!("Inputsfilter: {:?}", inputs
