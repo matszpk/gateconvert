@@ -173,6 +173,22 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
     }
 }
 
+#[repr(u8)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+enum PLACell {
+    #[default]
+    Zero,
+    Unknown,
+    One,
+}
+
+// algorithm to convert from PLA to Truth-Table:
+// PLA entries must be sorted lexicographically.
+// for all Truth table netry:
+//    l = lowest_PLA_entry, h = highest_PLA_entry.
+//    find in PLAentries.range(l,h) entry that match to truth entry.
+//    if matched then set specified value (if 1 then 1), otherwise other (if 1 then 0).
+
 #[cfg(test)]
 mod tests {
     use super::*;
