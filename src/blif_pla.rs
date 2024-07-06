@@ -188,6 +188,8 @@ enum PLACell {
 //    l = lowest_PLA_entry, h = highest_PLA_entry.
 //    find in PLAentries.range(l,h) entry that match to truth entry.
 //    if matched then set specified value (if 1 then 1), otherwise other (if 1 then 0).
+//    it possible to gen more ranges for x-particular cells in PLA entry:
+//    range for [U,U,.....], range for [1,U,.....], range for [U,1,.....], range for [1,1,.....]
 
 #[cfg(test)]
 mod tests {
