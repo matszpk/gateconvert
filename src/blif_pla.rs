@@ -217,6 +217,7 @@ fn pla_to_truth_table(
                 }
             }) {
                 out_table[i] = set_value;
+                break;
             }
         }
         // change cur_entry
