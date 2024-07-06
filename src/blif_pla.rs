@@ -231,7 +231,7 @@ fn pla_to_truth_table(
             }
         }
     }
-    vec![]
+    out_table
 }
 
 #[cfg(test)]
