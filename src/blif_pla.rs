@@ -207,7 +207,7 @@ fn pla_to_truth_table(
         let high = pla
             .binary_search_by_key(&&cur_high_entry, |(cur_entry, _, _)| cur_entry)
             .unwrap_or_else(|x| x);
-        let high = std::cmp::max(high, pla.len() - 1);
+        let high = std::cmp::min(high, pla.len() - 1);
         for (entry, _, _) in &pla[low..=high] {
             if entry.iter().enumerate().all(|(b, c)| {
                 if ((i >> b) & 1) != 0 {
