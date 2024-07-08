@@ -143,7 +143,6 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
                 .map(|i| {
                     let value = xor_elem_outputs[i];
                     let expr = if let Some(expr) = perfect_expr_map.get(&value) {
-                        println!("Copy of {}", value);
                         expr.clone()
                     } else {
                         let expr = gen_perfect_expr(cache, value, &int_inputs);
@@ -276,6 +275,7 @@ pub(crate) fn gen_pla_circuit_with_two_methods(
     pla: &[(Vec<PLACell>, bool, usize)],
 ) -> TableCircuit {
     if var_num <= 4 {
+        // println!("Smaller than 4 vars");
         let table = pla_to_truth_table(var_num, set_value, pla);
         gen_booltable_circuit_by_xor_table(cache, &table)
     } else if var_num >= usize::BITS as usize - 1 {
@@ -285,12 +285,18 @@ pub(crate) fn gen_pla_circuit_with_two_methods(
             .iter()
             .map(|(e, _, _)| e.iter().filter(|c| **c != PLACell::Unknown).count())
             .sum::<usize>();
+        // println!(
+        //     "Const: max_comb {} {}",
+        //     pla_total_gate_num,
+        //     (1 << var_num) / 6
+        // );
         if pla_total_gate_num >= (1 << var_num) / 6 {
             // if total gate number from PLA circuit is greater than (max_comb_num / 10)
             let table = pla_to_truth_table(var_num, set_value, pla);
             let table_circuit = gen_booltable_circuit_by_xor_table(cache, &table);
             match &table_circuit {
                 TableCircuit::Circuit((circuit, _)) => {
+                    // println!("Choose: {} {}", circuit.len(), pla_total_gate_num);
                     if circuit.len() < pla_total_gate_num {
                         // circuit is smaller
                         table_circuit
@@ -560,7 +566,7 @@ mod tests {
         let pla_table = pla_helper(pla_strings);
         let table = pla_to_truth_table(var_num, set_value, &pla_table);
         let table_circuit = gen_pla_table_circuit(var_num, set_value, &pla_table);
-        println!("Table: {:?} {:?}", table, table_circuit);
+        // println!("Table: {:?} {:?}", table, table_circuit);
         check_circuit(&table, table_circuit);
     }
 
@@ -598,6 +604,28 @@ mod tests {
             false,
             &["-1--101-1", "---11----", "00--11-00", "--1001-10"],
         );
+        gen_pla_table_circuit_and_check(
+            8,
+            true,
+            &[
+                "0011-111", "1010-10-", "01-101-0", "-0101-10", "100-11-1", "10--1100", "-01010-1",
+            ],
+        );
+        gen_pla_table_circuit_and_check(
+            8,
+            false,
+            &[
+                "0011-111", "1010-10-", "01-101-0", "-0101-10", "100-11-1", "10--1100", "-01010-1",
+            ],
+        );
+        gen_pla_table_circuit_and_check(
+            8,
+            true,
+            &[
+                "0011-111", "1010-10-", "01-101-0", "-0101-10", "100-11-1", "10--1100", "-01010-1",
+                "01011110", "01---101",
+            ],
+        );
     }
 
     fn gen_pla_circuit_2m_and_check(var_num: usize, set_value: bool, pla_strings: &[&str]) {
@@ -606,7 +634,7 @@ mod tests {
         let table = pla_to_truth_table(var_num, set_value, &pla_table);
         let table_circuit =
             gen_pla_circuit_with_two_methods(&mut cache, var_num, set_value, &pla_table);
-        println!("Table: {:?} {:?}", table, table_circuit);
+        // println!("Table: {:?} {:?}", table, table_circuit);
         check_circuit(&table, table_circuit);
     }
 
@@ -633,6 +661,25 @@ mod tests {
         gen_pla_circuit_2m_and_check(8, true, &["-0--10--"]);
         gen_pla_circuit_2m_and_check(8, false, &["-0--10--"]);
         gen_pla_circuit_2m_and_check(6, true, &["--1100", "1001--", "100-10"]);
-        gen_pla_circuit_2m_and_check(6, false, &["--1100", "1001--", "100-10"]);
+        gen_pla_circuit_2m_and_check(
+            9,
+            true,
+            &["-1--101-1", "---11----", "00--11-00", "--1001-10"],
+        );
+        gen_pla_circuit_2m_and_check(
+            8,
+            true,
+            &[
+                "0011-111", "1010-10-", "01-101-0", "-0101-10", "100-11-1", "10--1100", "-01010-1",
+            ],
+        );
+        gen_pla_circuit_2m_and_check(
+            8,
+            true,
+            &[
+                "0011-111", "1010-10-", "01-101-0", "-0101-10", "100-11-1", "10--1100", "-01010-1",
+                "01011110", "01---101",
+            ],
+        );
     }
 }
