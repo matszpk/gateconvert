@@ -140,9 +140,9 @@ impl<R: Read> BLIFTokensReader<R> {
 }
 
 #[derive(Clone, Debug)]
-struct Gate {
+struct Gate<'a> {
     params: Vec<String>,
-    circuit: TableCircuit,
+    circuit: &'a TableCircuit,
 }
 
 #[derive(Clone, Debug)]
@@ -162,12 +162,12 @@ enum CircuitMapping {
 }
 
 #[derive(Clone, Debug)]
-struct Model {
+struct Model<'a> {
     inputs: Vec<String>,
     outputs: Vec<String>,
     latches: Vec<(String, String)>,
     clocks: Vec<String>,
-    gates: Vec<Gate>,
+    gates: Vec<Gate<'a>>,
     subcircuits: Vec<Subcircuit>,
     // circuit: format:
     // first element - table circuit - same circuit,
@@ -195,7 +195,7 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
     out
 }
 
-fn gen_model_circuit(model_name: String, model_map: &mut HashMap<String, Model>) {
+fn gen_model_circuit<'a>(model_name: String, model_map: &mut HashMap<String, Model<'a>>) {
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
@@ -204,7 +204,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut HashMap<String, Model>)
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
 }
 
-fn resolve_model(top: String, model_map: &mut HashMap<String, Model>) {}
+fn resolve_model<'a>(top: String, model_map: &mut HashMap<String, Model<'a>>) {}
 
 #[cfg(test)]
 mod tests {
