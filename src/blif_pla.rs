@@ -269,7 +269,7 @@ fn gen_pla_table_circuit(
     })
 }
 
-fn gen_pla_circuit_with_two_methods(
+pub(crate) fn gen_pla_circuit_with_two_methods(
     cache: &mut CircuitCache,
     var_num: usize,
     set_value: bool,
