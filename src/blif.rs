@@ -141,7 +141,7 @@ impl<R: Read> BLIFTokensReader<R> {
 #[derive(Clone, Debug)]
 struct Gate {
     params: Vec<String>,
-    table: Vec<bool>,
+    circuit: TableCircuit,
 }
 
 #[derive(Clone, Debug)]
@@ -158,6 +158,7 @@ struct Model {
     clocks: Vec<String>,
     gates: Vec<Gate>,
     subcircuits: Vec<Subcircuit>,
+    circuit: Option<TableCircuit>,
 }
 
 #[cfg(test)]

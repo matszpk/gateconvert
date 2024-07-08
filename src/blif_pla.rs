@@ -79,7 +79,7 @@ fn gen_perfect_expr(cache: &mut CircuitCache, value: u16, inputvar: &UDynVarSys)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TableCircuit {
+pub(crate) enum TableCircuit {
     Value(bool),
     Circuit((Circuit<usize>, Vec<Option<usize>>)),
 }
