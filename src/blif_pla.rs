@@ -189,7 +189,7 @@ pub(crate) fn compare_pla_entry(
     a: &(Vec<PLACell>, bool, usize),
     b: &(Vec<PLACell>, bool, usize),
 ) -> Ordering {
-    for i in 0..a.0.len() {
+    for i in (0..a.0.len()).rev() {
         let r = a.0[i].cmp(&b.0[i]);
         if r != Ordering::Equal {
             return r;
