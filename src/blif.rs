@@ -2,7 +2,7 @@ use gatesim::*;
 
 use crate::blif_pla::*;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 
 pub fn to_blif(
@@ -160,6 +160,8 @@ struct Model {
     subcircuits: Vec<Subcircuit>,
     circuit: Option<TableCircuit>,
 }
+
+fn resolve_model(top: String, model_map: &mut HashMap<String, Model>) {}
 
 #[cfg(test)]
 mod tests {
