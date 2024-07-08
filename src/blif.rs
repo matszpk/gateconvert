@@ -141,7 +141,7 @@ impl<R: Read> BLIFTokensReader<R> {
 #[derive(Clone, Debug)]
 struct Gate {
     params: Vec<String>,
-    pla_table: (Vec<PLACell>, bool, usize),
+    table: Vec<bool>,
 }
 
 #[derive(Clone, Debug)]
