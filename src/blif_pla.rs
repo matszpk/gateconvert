@@ -377,4 +377,103 @@ mod tests {
         }
         gen_xor_booltable_circuit_and_check_2(&data);
     }
+
+    fn pla_helper(strings: &[&str]) -> Vec<(Vec<PLACell>, bool, usize)> {
+        strings
+            .into_iter()
+            .map(|s| {
+                (
+                    s.chars()
+                        .map(|c| match c {
+                            '0' => PLACell::Zero,
+                            '-' => PLACell::Unknown,
+                            '1' => PLACell::One,
+                            _ => {
+                                panic!("Unexpected");
+                            }
+                        })
+                        .collect::<Vec<_>>(),
+                    false,
+                    0,
+                )
+            })
+            .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn test_pla_to_truth_table() {
+        assert_eq!(vec![false], pla_to_truth_table(0, true, &vec![]));
+        assert_eq!(
+            vec![true],
+            pla_to_truth_table(0, true, &vec![(vec![], false, 0)])
+        );
+        assert_eq!(vec![true], pla_to_truth_table(0, false, &vec![]));
+        assert_eq!(
+            vec![false],
+            pla_to_truth_table(0, false, &vec![(vec![], false, 0)])
+        );
+        assert_eq!(vec![false; 16], pla_to_truth_table(4, true, &vec![]));
+        assert_eq!(vec![true; 16], pla_to_truth_table(4, false, &vec![]));
+        assert_eq!(
+            str_to_vecbool("00000000_00000100"),
+            pla_to_truth_table(4, true, &pla_helper(&["1011"]))
+        );
+        assert_eq!(
+            str_to_vecbool("11111111_11111011"),
+            pla_to_truth_table(4, false, &pla_helper(&["1011"]))
+        );
+        assert_eq!(
+            str_to_vecbool("00001111_00000000"),
+            pla_to_truth_table(4, true, &pla_helper(&["--10"]))
+        );
+        assert_eq!(
+            str_to_vecbool("11110000_11111111"),
+            pla_to_truth_table(4, false, &pla_helper(&["--10"]))
+        );
+        assert_eq!(
+            str_to_vecbool("00000011_00000011"),
+            pla_to_truth_table(4, true, &pla_helper(&["-11-"]))
+        );
+        assert_eq!(
+            str_to_vecbool(concat!(
+                "00000000_00000000_00000000_00000000",
+                "00001010_00000000_00001010_00000000"
+            )),
+            pla_to_truth_table(6, true, &pla_helper(&["0-10-1"]))
+        );
+        assert_eq!(
+            str_to_vecbool(concat!(
+                "00000000_00000000_00000000_00000000",
+                "00000000_11110000_00000000_11110000"
+            )),
+            pla_to_truth_table(6, true, &pla_helper(&["--01-1"]))
+        );
+        assert_eq!(
+            str_to_vecbool(concat!(
+                "00000000_00000000_00000000_00000000",
+                "00000000_11110000_00000000_11110000"
+            )),
+            pla_to_truth_table(6, true, &pla_helper(&["--01-1"]))
+        );
+        assert_eq!(
+            str_to_vecbool(concat!(
+                "00000000_00000000_11001100_11001100",
+                "00000000_00000000_00000000_00000000",
+                "00000000_00000000_11001100_11001100",
+                "00000000_00000000_00000000_00000000",
+                "00000000_00000000_11001100_11001100",
+                "00000000_00000000_00000000_00000000",
+                "00000000_00000000_11001100_11001100",
+                "00000000_00000000_00000000_00000000",
+            )),
+            pla_to_truth_table(8, true, &pla_helper(&["-0--10--"]))
+        );
+        assert_eq!(
+            str_to_vecbool(concat!(
+                "00000000_01001111_01000000_01000000",
+                "00000000_01000000_00000000_01000000"
+            )),
+            pla_to_truth_table(6, true, &pla_helper(&["--1100", "1001--", "100-10"]))
+        );
+    }
 }
