@@ -237,6 +237,7 @@ fn gen_pla_table_circuit(
         let vars = UDynVarSys::var(var_num);
         let mut whole_expr = BoolVar::from(!set_value);
         for (entry, _, _) in pla {
+            assert_eq!(var_num, entry.len());
             let mut entry_expr =
                 entry
                     .iter()
