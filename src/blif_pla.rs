@@ -269,6 +269,43 @@ fn gen_pla_table_circuit(
     })
 }
 
+fn gen_pla_circuit_with_two_methods(
+    cache: &mut CircuitCache,
+    var_num: usize,
+    set_value: bool,
+    pla: &[(Vec<PLACell>, bool, usize)],
+) -> TableCircuit {
+    if var_num <= 4 {
+        let table = pla_to_truth_table(var_num, set_value, pla);
+        gen_booltable_circuit_by_xor_table(cache, &table)
+    } else if var_num >= usize::BITS as usize - 1 {
+        gen_pla_table_circuit(var_num, set_value, pla)
+    } else {
+        let pla_total_gate_num = pla
+            .iter()
+            .map(|(e, _, _)| e.iter().filter(|c| **c != PLACell::Unknown).count())
+            .sum::<usize>();
+        if pla_total_gate_num >= (1 << var_num) / 6 {
+            // if total gate number from PLA circuit is greater than (max_comb_num / 10)
+            let table = pla_to_truth_table(var_num, set_value, pla);
+            let table_circuit = gen_booltable_circuit_by_xor_table(cache, &table);
+            match &table_circuit {
+                TableCircuit::Circuit((circuit, _)) => {
+                    if circuit.len() < pla_total_gate_num {
+                        // circuit is smaller
+                        table_circuit
+                    } else {
+                        gen_pla_table_circuit(var_num, set_value, pla)
+                    }
+                }
+                TableCircuit::Value(_) => table_circuit,
+            }
+        } else {
+            gen_pla_table_circuit(var_num, set_value, pla)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
