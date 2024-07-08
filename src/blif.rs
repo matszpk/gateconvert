@@ -138,6 +138,28 @@ impl<R: Read> BLIFTokensReader<R> {
     }
 }
 
+#[derive(Clone, Debug)]
+struct Gate {
+    params: Vec<String>,
+    pla_table: (Vec<PLACell>, bool, usize),
+}
+
+#[derive(Clone, Debug)]
+struct Subcircuit {
+    model: String,
+    mappings: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+struct Model {
+    inputs: Vec<String>,
+    outputs: Vec<String>,
+    latches: Vec<(String, String)>,
+    clocks: Vec<String>,
+    gates: Vec<Gate>,
+    subcircuits: Vec<Subcircuit>
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

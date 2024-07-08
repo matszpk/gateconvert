@@ -175,7 +175,7 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum PLACell {
     #[default]
     Zero,
