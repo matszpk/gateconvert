@@ -177,7 +177,7 @@ fn gen_booltable_circuit_by_xor_table(cache: &mut CircuitCache, table: &[bool]) 
 
 #[repr(u8)]
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
-enum PLACell {
+pub(crate) enum PLACell {
     #[default]
     Zero,
     Unknown,
@@ -598,5 +598,41 @@ mod tests {
             false,
             &["-1--101-1", "---11----", "00--11-00", "--1001-10"],
         );
+    }
+
+    fn gen_pla_circuit_2m_and_check(var_num: usize, set_value: bool, pla_strings: &[&str]) {
+        let mut cache = CircuitCache::new();
+        let pla_table = pla_helper(pla_strings);
+        let table = pla_to_truth_table(var_num, set_value, &pla_table);
+        let table_circuit =
+            gen_pla_circuit_with_two_methods(&mut cache, var_num, set_value, &pla_table);
+        println!("Table: {:?} {:?}", table, table_circuit);
+        check_circuit(&table, table_circuit);
+    }
+
+    #[test]
+    fn test_gen_pla_circuit_with_two_methods() {
+        gen_pla_circuit_2m_and_check(0, true, &[]);
+        gen_pla_circuit_2m_and_check(0, false, &[]);
+        gen_pla_circuit_2m_and_check(4, true, &[]);
+        gen_pla_circuit_2m_and_check(4, false, &[]);
+        gen_pla_circuit_2m_and_check(0, true, &[""]);
+        gen_pla_circuit_2m_and_check(0, false, &[""]);
+        gen_pla_circuit_2m_and_check(1, true, &["0"]);
+        gen_pla_circuit_2m_and_check(1, false, &["0"]);
+        gen_pla_circuit_2m_and_check(1, true, &["1"]);
+        gen_pla_circuit_2m_and_check(1, false, &["1"]);
+        gen_pla_circuit_2m_and_check(1, true, &["-"]);
+        gen_pla_circuit_2m_and_check(1, false, &["-"]);
+        gen_pla_circuit_2m_and_check(4, true, &["1011"]);
+        gen_pla_circuit_2m_and_check(4, false, &["1011"]);
+        gen_pla_circuit_2m_and_check(4, true, &["--01"]);
+        gen_pla_circuit_2m_and_check(4, false, &["--01"]);
+        gen_pla_circuit_2m_and_check(6, true, &["0-10-1"]);
+        gen_pla_circuit_2m_and_check(6, false, &["0-10-1"]);
+        gen_pla_circuit_2m_and_check(8, true, &["-0--10--"]);
+        gen_pla_circuit_2m_and_check(8, false, &["-0--10--"]);
+        gen_pla_circuit_2m_and_check(6, true, &["--1100", "1001--", "100-10"]);
+        gen_pla_circuit_2m_and_check(6, false, &["--1100", "1001--", "100-10"]);
     }
 }
