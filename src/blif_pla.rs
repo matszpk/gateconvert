@@ -228,6 +228,42 @@ fn pla_to_truth_table(
     out_table
 }
 
+fn gen_pla_table_circuit(
+    var_num: usize,
+    set_value: bool,
+    pla: &[(Vec<PLACell>, bool, usize)],
+) -> TableCircuit {
+    callsys(|| {
+        let vars = UDynVarSys::var(var_num);
+        let mut whole_expr = BoolVar::from(!set_value);
+        for (entry, _, _) in pla {
+            let mut entry_expr =
+                entry
+                    .iter()
+                    .enumerate()
+                    .fold(BoolVarSys::from(set_value), |a, (b, c)| {
+                        let cv = *c == PLACell::One;
+                        if set_value {
+                            a & (vars.bit(b) ^ !cv)
+                        } else {
+                            a | (vars.bit(b) ^ cv)
+                        }
+                    });
+            if set_value {
+                whole_expr |= entry_expr;
+            } else {
+                whole_expr &= entry_expr;
+            }
+        }
+        if let Some(v) = whole_expr.value() {
+            TableCircuit::Value(v)
+        } else {
+            let (circuit, map) = whole_expr.to_translated_circuit_with_map(vars.iter());
+            TableCircuit::Circuit((circuit, map))
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
