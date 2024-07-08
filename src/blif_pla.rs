@@ -184,68 +184,44 @@ enum PLACell {
     One,
 }
 
-#[inline]
-pub(crate) fn compare_pla_entry(
-    a: &(Vec<PLACell>, bool, usize),
-    b: &(Vec<PLACell>, bool, usize),
-) -> Ordering {
-    for i in (0..a.0.len()).rev() {
-        let r = a.0[i].cmp(&b.0[i]);
-        if r != Ordering::Equal {
-            return r;
-        }
-    }
-    Ordering::Equal
-}
-
-// algorithm to convert from PLA to Truth-Table:
-// PLA entries must be sorted.
-// for all Truth table netry:
-//    l = lowest_PLA_entry, h = highest_PLA_entry.
-//    find in PLAentries.range(l,h) entry that match to truth entry.
-//    if matched then set specified value (if 1 then 1), otherwise other (if 1 then 0).
-//    it possible to gen more ranges for x-particular cells in PLA entry:
-//    range for [U,U,.....], range for [1,U,.....], range for [U,1,.....], range for [1,1,.....]
-
 fn pla_to_truth_table(
     var_num: usize,
     set_value: bool,
     pla: &[(Vec<PLACell>, bool, usize)],
 ) -> Vec<bool> {
-    assert!(var_num < 63);
+    assert!(var_num < (usize::BITS - 1) as usize);
     let mut out_table = vec![!set_value; 1 << var_num];
-    let mut cur_low_entry = (vec![PLACell::Zero; var_num], false, 0);
-    let mut cur_high_entry = (vec![PLACell::Unknown; var_num], false, 0);
-    for i in 0..1 << var_num {
-        let low = pla
-            .binary_search_by(|e| compare_pla_entry(e, &cur_low_entry))
-            .unwrap_or_else(|x| x);
-        let high = pla
-            .binary_search_by(|e| compare_pla_entry(e, &cur_high_entry))
-            .unwrap_or_else(|x| x);
-        let high = std::cmp::min(high, pla.len() - 1);
-        for (entry, _, _) in &pla[low..=high] {
-            if entry.iter().enumerate().all(|(b, c)| {
-                if ((i >> b) & 1) != 0 {
-                    *c != PLACell::Zero // if not zero
-                } else {
-                    *c != PLACell::One // if not one
+    for (entry, _, _) in pla {
+        if entry.iter().any(|c| *c == PLACell::Unknown) {
+            let unknowns = entry
+                .iter()
+                .enumerate()
+                .filter_map(|(b, c)| {
+                    if *c == PLACell::Unknown {
+                        Some(b)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            let mut index = entry.iter().enumerate().fold(0usize, |a, (b, c)| {
+                a | (usize::from(*c == PLACell::One) << b)
+            });
+            for _ in 0..1 << unknowns.len() {
+                out_table[index] = set_value;
+                for b in &unknowns {
+                    index ^= 1 << b;
+                    if ((index >> b) & 1) != 0 {
+                        // if not carry, after increase it 1.
+                        break;
+                    }
                 }
-            }) {
-                out_table[i] = set_value;
-                break;
             }
-        }
-        // change cur_entry
-        for i in 0..var_num {
-            if cur_low_entry.0[i] == PLACell::Zero {
-                cur_low_entry.0[i] = PLACell::Unknown;
-                cur_high_entry.0[i] = PLACell::One;
-                break;
-            } else {
-                cur_low_entry.0[i] = PLACell::Zero;
-                cur_high_entry.0[i] = PLACell::Unknown;
-            }
+        } else {
+            let index = entry.iter().enumerate().fold(0usize, |a, (b, c)| {
+                a | (usize::from(*c == PLACell::One) << b)
+            });
+            out_table[index] = set_value;
         }
     }
     out_table
