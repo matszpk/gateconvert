@@ -243,11 +243,15 @@ fn gen_pla_table_circuit(
                     .iter()
                     .enumerate()
                     .fold(BoolVarSys::from(set_value), |a, (b, c)| {
-                        let cv = *c == PLACell::One;
-                        if set_value {
-                            a & (vars.bit(b) ^ !cv)
+                        if *c != PLACell::Unknown {
+                            let cv = *c == PLACell::One;
+                            if set_value {
+                                a & (vars.bit(b) ^ !cv)
+                            } else {
+                                a | (vars.bit(b) ^ cv)
+                            }
                         } else {
-                            a | (vars.bit(b) ^ cv)
+                            a
                         }
                     });
             if set_value {
@@ -513,5 +517,29 @@ mod tests {
             )),
             pla_to_truth_table(6, true, &pla_helper(&["--1100", "1001--", "100-10"]))
         );
+    }
+
+    fn gen_pla_table_circuit_and_check(var_num: usize, set_value: bool, pla_strings: &[&str]) {
+        let pla_table = pla_helper(pla_strings);
+        let table = pla_to_truth_table(var_num, set_value, &pla_table);
+        let table_circuit = gen_pla_table_circuit(var_num, set_value, &pla_table);
+        println!("Table: {:?} {:?}", table, table_circuit);
+        check_circuit(&table, table_circuit);
+    }
+
+    #[test]
+    fn test_gen_pla_table_circuit() {
+        gen_pla_table_circuit_and_check(0, true, &[]);
+        gen_pla_table_circuit_and_check(0, false, &[]);
+        gen_pla_table_circuit_and_check(4, true, &[]);
+        gen_pla_table_circuit_and_check(4, false, &[]);
+        gen_pla_table_circuit_and_check(0, true, &[""]);
+        gen_pla_table_circuit_and_check(0, false, &[""]);
+        gen_pla_table_circuit_and_check(1, true, &["0"]);
+        gen_pla_table_circuit_and_check(1, false, &["0"]);
+        gen_pla_table_circuit_and_check(1, true, &["1"]);
+        gen_pla_table_circuit_and_check(1, false, &["1"]);
+        gen_pla_table_circuit_and_check(1, true, &["-"]);
+        gen_pla_table_circuit_and_check(1, false, &["-"]);
     }
 }
