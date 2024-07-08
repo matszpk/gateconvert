@@ -1,4 +1,5 @@
-use gateconvert::aiger::{self, AIGEREntry};
+use gateconvert::aiger;
+use gateconvert::AssignEntry;
 use gatesim::*;
 
 fn to_aiger_ascii_helper(circuit: Circuit<usize>, state_len: usize) -> String {
@@ -211,7 +212,7 @@ fn test_to_aiger() {
 
 pub fn from_aiger_ascii_helper(
     input: &str,
-) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), String> {
+) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), String> {
     let mut bytes = input.as_bytes();
     aiger::from_aiger(&mut bytes, false).map_err(|e| e.to_string())
 }
@@ -245,16 +246,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(5, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(5, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(5, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -285,16 +286,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(5, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(5, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(5, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -342,16 +343,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (12, AIGEREntry::Var(5, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (13, AIGEREntry::Var(5, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (12, AssignEntry::Var(5, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (13, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -383,16 +384,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(5, true)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(5, false)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(5, true)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(5, false)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -426,16 +427,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(7, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(7, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(7, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(7, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -469,16 +470,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(7, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(7, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(7, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(7, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -512,16 +513,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(7, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(7, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(7, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(7, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -553,16 +554,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (12, AIGEREntry::Var(0, false)),
-                (14, AIGEREntry::Var(1, false)),
-                (16, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (6, AIGEREntry::Var(5, false)),
-                (17, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (7, AIGEREntry::Var(5, true)),
+                (12, AssignEntry::Var(0, false)),
+                (14, AssignEntry::Var(1, false)),
+                (16, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (6, AssignEntry::Var(5, false)),
+                (17, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (7, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -596,18 +597,18 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (3, AIGEREntry::Var(0, true)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(5, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (4, AIGEREntry::Var(1, false)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(5, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (3, AssignEntry::Var(0, true)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(5, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (4, AssignEntry::Var(1, false)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -630,15 +631,15 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (6, AIGEREntry::Var(0, false)),
-                (8, AIGEREntry::Var(1, false)),
-                (10, AIGEREntry::Var(2, false)),
-                (2, AIGEREntry::Var(3, false)),
-                (4, AIGEREntry::Var(4, false)),
-                (13, AIGEREntry::Var(5, true)),
-                (14, AIGEREntry::Var(6, false)),
-                (16, AIGEREntry::Var(7, false)),
-                (23, AIGEREntry::Var(8, true)),
+                (6, AssignEntry::Var(0, false)),
+                (8, AssignEntry::Var(1, false)),
+                (10, AssignEntry::Var(2, false)),
+                (2, AssignEntry::Var(3, false)),
+                (4, AssignEntry::Var(4, false)),
+                (13, AssignEntry::Var(5, true)),
+                (14, AssignEntry::Var(6, false)),
+                (16, AssignEntry::Var(7, false)),
+                (23, AssignEntry::Var(8, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -675,15 +676,15 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (22, AIGEREntry::Var(7, false)),
-                (30, AIGEREntry::Var(10, false)),
-                (32, AIGEREntry::Var(11, false)),
-                (39, AIGEREntry::Var(12, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (22, AssignEntry::Var(7, false)),
+                (30, AssignEntry::Var(10, false)),
+                (32, AssignEntry::Var(11, false)),
+                (39, AssignEntry::Var(12, true)),
             ],
         )),
         from_aiger_ascii_helper(
@@ -737,15 +738,15 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (22, AIGEREntry::Var(7, false)),
-                (28, AIGEREntry::Var(10, false)),
-                (24, AIGEREntry::Var(11, false)),
-                (35, AIGEREntry::Var(12, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (22, AssignEntry::Var(7, false)),
+                (28, AssignEntry::Var(10, false)),
+                (24, AssignEntry::Var(11, false)),
+                (35, AssignEntry::Var(12, true)),
             ],
         )),
         from_aiger_ascii_helper(
@@ -872,23 +873,23 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (8, AIGEREntry::Var(0, false)),
-                (10, AIGEREntry::Var(1, false)),
-                (12, AIGEREntry::Var(2, false)),
-                (14, AIGEREntry::Var(3, false)),
-                (16, AIGEREntry::Var(4, false)),
-                (2, AIGEREntry::Var(5, false)),
-                (4, AIGEREntry::Var(6, false)),
-                (6, AIGEREntry::Var(7, false)),
-                (34, AIGEREntry::Var(13, false)),
-                (26, AIGEREntry::Var(12, false)),
-                (40, AIGEREntry::Var(16, false)),
-                (36, AIGEREntry::Var(14, false)),
-                (42, AIGEREntry::Var(17, false)),
-                (24, AIGEREntry::Var(9, false)),
-                (27, AIGEREntry::Var(12, true)),
-                (32, AIGEREntry::Var(20, false)),
-                (41, AIGEREntry::Var(16, true))
+                (8, AssignEntry::Var(0, false)),
+                (10, AssignEntry::Var(1, false)),
+                (12, AssignEntry::Var(2, false)),
+                (14, AssignEntry::Var(3, false)),
+                (16, AssignEntry::Var(4, false)),
+                (2, AssignEntry::Var(5, false)),
+                (4, AssignEntry::Var(6, false)),
+                (6, AssignEntry::Var(7, false)),
+                (34, AssignEntry::Var(13, false)),
+                (26, AssignEntry::Var(12, false)),
+                (40, AssignEntry::Var(16, false)),
+                (36, AssignEntry::Var(14, false)),
+                (42, AssignEntry::Var(17, false)),
+                (24, AssignEntry::Var(9, false)),
+                (27, AssignEntry::Var(12, true)),
+                (32, AssignEntry::Var(20, false)),
+                (41, AssignEntry::Var(16, true))
             ],
         )),
         from_aiger_ascii_helper(
@@ -935,23 +936,23 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (8, AIGEREntry::Var(0, false)), // 0
-                (10, AIGEREntry::NoMap),
-                (12, AIGEREntry::NoMap),
-                (14, AIGEREntry::NoMap),
-                (16, AIGEREntry::Var(1, false)),
-                (2, AIGEREntry::NoMap),
-                (4, AIGEREntry::NoMap),
-                (6, AIGEREntry::Var(2, false)),  // 2
-                (34, AIGEREntry::Value(false)),  // 34 24 26, 24 0 18 -> 34 0 26 -> false
-                (26, AIGEREntry::Var(5, false)), // ok
-                (40, AIGEREntry::Value(true)),   // 40 37 39, 36 0 10, 38 0 15 -> true
-                (36, AIGEREntry::Value(false)),  // false
-                (42, AIGEREntry::Var(1, true)),  // 42 40 17 -> 42 1 17 -> !16
-                (24, AIGEREntry::Value(false)),  // false
-                (27, AIGEREntry::Var(5, true)),  // ok
-                (32, AIGEREntry::Value(false)),  // 32 28 30, 30 0 15 -> 32 28 0 -> false
-                (41, AIGEREntry::Value(false))   // false
+                (8, AssignEntry::Var(0, false)), // 0
+                (10, AssignEntry::NoMap),
+                (12, AssignEntry::NoMap),
+                (14, AssignEntry::NoMap),
+                (16, AssignEntry::Var(1, false)),
+                (2, AssignEntry::NoMap),
+                (4, AssignEntry::NoMap),
+                (6, AssignEntry::Var(2, false)),  // 2
+                (34, AssignEntry::Value(false)),  // 34 24 26, 24 0 18 -> 34 0 26 -> false
+                (26, AssignEntry::Var(5, false)), // ok
+                (40, AssignEntry::Value(true)),   // 40 37 39, 36 0 10, 38 0 15 -> true
+                (36, AssignEntry::Value(false)),  // false
+                (42, AssignEntry::Var(1, true)),  // 42 40 17 -> 42 1 17 -> !16
+                (24, AssignEntry::Value(false)),  // false
+                (27, AssignEntry::Var(5, true)),  // ok
+                (32, AssignEntry::Value(false)),  // 32 28 30, 30 0 15 -> 32 28 0 -> false
+                (41, AssignEntry::Value(false))   // false
             ],
         )),
         from_aiger_ascii_helper(
@@ -1002,13 +1003,13 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (19, AIGEREntry::Var(6, true)),
-                (24, AIGEREntry::Var(9, false)),
-                (31, AIGEREntry::Var(10, true))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (19, AssignEntry::Var(6, true)),
+                (24, AssignEntry::Var(9, false)),
+                (31, AssignEntry::Var(10, true))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1052,13 +1053,13 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (19, AIGEREntry::Var(6, true)),
-                (24, AIGEREntry::Var(9, false)),
-                (31, AIGEREntry::Var(10, true))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (19, AssignEntry::Var(6, true)),
+                (24, AssignEntry::Var(9, false)),
+                (31, AssignEntry::Var(10, true))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1094,16 +1095,16 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Value(false)),
-                (8, AIGEREntry::Var(2, false)),
-                (10, AIGEREntry::Value(true)),
-                (16, AIGEREntry::Var(3, false)),
-                (7, AIGEREntry::Value(true)),
-                (9, AIGEREntry::Var(2, true)),
-                (11, AIGEREntry::Value(false)),
-                (17, AIGEREntry::Var(3, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Value(false)),
+                (8, AssignEntry::Var(2, false)),
+                (10, AssignEntry::Value(true)),
+                (16, AssignEntry::Var(3, false)),
+                (7, AssignEntry::Value(true)),
+                (9, AssignEntry::Var(2, true)),
+                (11, AssignEntry::Value(false)),
+                (17, AssignEntry::Var(3, true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -1115,16 +1116,16 @@ fn test_from_aiger() {
         Ok((
             Circuit::new(2, [Gate::new_and(0, 1)], [(2, false), (2, true)]).unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Value(true)),
-                (10, AIGEREntry::Value(false)),
-                (16, AIGEREntry::Value(false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Value(false)),
-                (11, AIGEREntry::Value(true)),
-                (17, AIGEREntry::Value(true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Value(true)),
+                (10, AssignEntry::Value(false)),
+                (16, AssignEntry::Value(false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Value(false)),
+                (11, AssignEntry::Value(true)),
+                (17, AssignEntry::Value(true)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -1136,16 +1137,16 @@ fn test_from_aiger() {
         Ok((
             Circuit::new(2, [Gate::new_and(0, 1)], [(2, false), (2, true)]).unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Value(true)),
-                (10, AIGEREntry::Value(false)),
-                (16, AIGEREntry::Value(true)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Value(false)),
-                (11, AIGEREntry::Value(true)),
-                (17, AIGEREntry::Value(false)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Value(true)),
+                (10, AssignEntry::Value(false)),
+                (16, AssignEntry::Value(true)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Value(false)),
+                (11, AssignEntry::Value(true)),
+                (17, AssignEntry::Value(false)),
             ],
         )),
         from_aiger_ascii_helper(concat!(
@@ -1163,13 +1164,13 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::NoMap),
-                (4, AIGEREntry::NoMap),
-                (6, AIGEREntry::Var(0, false)),
-                (8, AIGEREntry::Var(1, false)),
-                (19, AIGEREntry::Value(true)),
-                (24, AIGEREntry::Var(3, true)),
-                (31, AIGEREntry::Var(3, false)),
+                (2, AssignEntry::NoMap),
+                (4, AssignEntry::NoMap),
+                (6, AssignEntry::Var(0, false)),
+                (8, AssignEntry::Var(1, false)),
+                (19, AssignEntry::Value(true)),
+                (24, AssignEntry::Var(3, true)),
+                (31, AssignEntry::Var(3, false)),
             ],
         )),
         from_aiger_ascii_helper(
@@ -1211,11 +1212,11 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (24, AIGEREntry::Var(7, false)),
-                (0, AIGEREntry::Value(false))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (24, AssignEntry::Var(7, false)),
+                (0, AssignEntry::Value(false))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1247,11 +1248,11 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (18, AIGEREntry::Var(4, false)),
-                (6, AIGEREntry::Var(2, false))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (18, AssignEntry::Var(4, false)),
+                (6, AssignEntry::Var(2, false))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1287,11 +1288,11 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (19, AIGEREntry::Var(4, false)),
-                (22, AIGEREntry::Var(8, false))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (19, AssignEntry::Var(4, false)),
+                (22, AssignEntry::Var(8, false))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1328,11 +1329,11 @@ fn test_from_aiger() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (18, AIGEREntry::Var(4, false)),
-                (21, AIGEREntry::Var(7, true))
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (18, AssignEntry::Var(4, false)),
+                (21, AssignEntry::Var(7, true))
             ],
         )),
         from_aiger_ascii_helper(
@@ -1356,7 +1357,7 @@ fn test_from_aiger() {
 
 pub fn from_aiger_bin_helper(
     mut input: &[u8],
-) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), String> {
+) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), String> {
     aiger::from_aiger(&mut input, true).map_err(|e| e.to_string())
 }
 
@@ -1389,16 +1390,16 @@ fn test_from_aiger_bin() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (16, AIGEREntry::Var(5, false)),
-                (7, AIGEREntry::Var(2, true)),
-                (9, AIGEREntry::Var(3, true)),
-                (11, AIGEREntry::Var(4, true)),
-                (17, AIGEREntry::Var(5, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (16, AssignEntry::Var(5, false)),
+                (7, AssignEntry::Var(2, true)),
+                (9, AssignEntry::Var(3, true)),
+                (11, AssignEntry::Var(4, true)),
+                (17, AssignEntry::Var(5, true)),
             ],
         )),
         from_aiger_bin_helper(&[
@@ -1421,15 +1422,15 @@ fn test_from_aiger_bin() {
             )
             .unwrap(),
             vec![
-                (6, AIGEREntry::Var(0, false)),
-                (8, AIGEREntry::Var(1, false)),
-                (10, AIGEREntry::Var(2, false)),
-                (2, AIGEREntry::Var(3, false)),
-                (4, AIGEREntry::Var(4, false)),
-                (13, AIGEREntry::Var(5, true)),
-                (14, AIGEREntry::Var(6, false)),
-                (16, AIGEREntry::Var(7, false)),
-                (23, AIGEREntry::Var(8, true)),
+                (6, AssignEntry::Var(0, false)),
+                (8, AssignEntry::Var(1, false)),
+                (10, AssignEntry::Var(2, false)),
+                (2, AssignEntry::Var(3, false)),
+                (4, AssignEntry::Var(4, false)),
+                (13, AssignEntry::Var(5, true)),
+                (14, AssignEntry::Var(6, false)),
+                (16, AssignEntry::Var(7, false)),
+                (23, AssignEntry::Var(8, true)),
             ],
         )),
         from_aiger_bin_helper(&[
@@ -1458,15 +1459,15 @@ fn test_from_aiger_bin() {
             )
             .unwrap(),
             vec![
-                (2, AIGEREntry::Var(0, false)),
-                (4, AIGEREntry::Var(1, false)),
-                (6, AIGEREntry::Var(2, false)),
-                (8, AIGEREntry::Var(3, false)),
-                (10, AIGEREntry::Var(4, false)),
-                (22, AIGEREntry::Var(7, false)),
-                (30, AIGEREntry::Var(10, false)),
-                (32, AIGEREntry::Var(11, false)),
-                (39, AIGEREntry::Var(12, true)),
+                (2, AssignEntry::Var(0, false)),
+                (4, AssignEntry::Var(1, false)),
+                (6, AssignEntry::Var(2, false)),
+                (8, AssignEntry::Var(3, false)),
+                (10, AssignEntry::Var(4, false)),
+                (22, AssignEntry::Var(7, false)),
+                (30, AssignEntry::Var(10, false)),
+                (32, AssignEntry::Var(11, false)),
+                (39, AssignEntry::Var(12, true)),
             ],
         )),
         from_aiger_bin_helper(&[
@@ -1474,35 +1475,5 @@ fn test_from_aiger_bin() {
             10, 51, 48, 10, 51, 50, 10, 51, 57, 10, 4, 4, 6, 2, 6, 6, 8, 4, 4, 2, 5, 2, 1, 2, 10,
             2, 2, 8, 3, 8, 1, 2, 8, 8, 4, 8, 5, 8, 1, 2
         ]),
-    );
-}
-
-#[test]
-fn test_aiger_map_to_string() {
-    assert_eq!(
-        concat!(
-            "8 0\n10 -\n12 -\n14 -\n16 1\n2 -\n4 -\n6 2\n34 false\n26 5\n",
-            "40 true\n36 false\n42 !1\n24 false\n27 !5\n32 false\n41 false\n"
-        )
-        .to_string(),
-        aiger::aiger_map_to_string(&[
-            (8, AIGEREntry::Var(0, false)), // 0
-            (10, AIGEREntry::NoMap),
-            (12, AIGEREntry::NoMap),
-            (14, AIGEREntry::NoMap),
-            (16, AIGEREntry::Var(1, false)),
-            (2, AIGEREntry::NoMap),
-            (4, AIGEREntry::NoMap),
-            (6, AIGEREntry::Var(2, false)),  // 2
-            (34, AIGEREntry::Value(false)),  // 34 24 26, 24 0 18 -> 34 0 26 -> false
-            (26, AIGEREntry::Var(5, false)), // ok
-            (40, AIGEREntry::Value(true)),   // 40 37 39, 36 0 10, 38 0 15 -> true
-            (36, AIGEREntry::Value(false)),  // false
-            (42, AIGEREntry::Var(1, true)),  // 42 40 17 -> 42 1 17 -> !16
-            (24, AIGEREntry::Value(false)),  // false
-            (27, AIGEREntry::Var(5, true)),  // ok
-            (32, AIGEREntry::Value(false)),  // 32 28 30, 30 0 15 -> 32 28 0 -> false
-            (41, AIGEREntry::Value(false))   // false
-        ])
     );
 }

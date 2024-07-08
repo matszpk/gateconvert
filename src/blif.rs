@@ -157,7 +157,7 @@ struct Model {
     latches: Vec<(String, String)>,
     clocks: Vec<String>,
     gates: Vec<Gate>,
-    subcircuits: Vec<Subcircuit>
+    subcircuits: Vec<Subcircuit>,
 }
 
 #[cfg(test)]

@@ -177,7 +177,7 @@ fn main() {
             )
             .unwrap();
             if let Some(map_name) = from_aig.aiger_map {
-                fs::write(map_name, aiger::aiger_map_to_string(&map)).unwrap();
+                fs::write(map_name, assign_map_to_string(&map)).unwrap();
             }
         }
         Commands::ToAIGER(to_aig) => {

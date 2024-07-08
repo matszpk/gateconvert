@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Display};
 use std::io::{self, Read, Write};
 
+use crate::AssignEntry;
+
 pub fn to_aiger(
     circuit: &Circuit<usize>,
     state_len: usize,
@@ -118,37 +120,9 @@ pub enum AIGERError {
     BadInput,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum AIGEREntry {
-    NoMap,            // no mapping
-    Value(bool),      // boolean value
-    Var(usize, bool), // (circuit wire index, negation)
-}
-
-impl Display for AIGEREntry {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AIGEREntry::NoMap => write!(f, "-"),
-            AIGEREntry::Value(v) => write!(f, "{}", v),
-            AIGEREntry::Var(v, n) => write!(f, "{}{}", if *n { "!" } else { "" }, v),
-        }
-    }
-}
-
-pub fn aiger_map_to_string(map: &[(usize, AIGEREntry)]) -> String {
-    let mut out = String::new();
-    for (i, t) in map {
-        out += &i.to_string();
-        out.push(' ');
-        out += &t.to_string();
-        out.push('\n');
-    }
-    out
-}
-
 fn from_aiger_int(
     aig: &Aig<usize>,
-) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), AIGERError> {
     use gategen::boolvar::*;
     use gategen::dynintvar::*;
     let state_len = aig.latches.len();
@@ -371,9 +345,9 @@ fn from_aiger_int(
             (
                 l,
                 if let Some(newidx) = assign_map[i] {
-                    AIGEREntry::Var(newidx, false)
+                    AssignEntry::Var(newidx, false)
                 } else {
-                    AIGEREntry::NoMap
+                    AssignEntry::NoMap
                 },
             )
         })
@@ -382,10 +356,10 @@ fn from_aiger_int(
             aiger_out_map.into_iter().map(|(l, cb, circ_out_idx)| {
                 if let Some(c) = cb {
                     // constant
-                    (*l, AIGEREntry::Value(c))
+                    (*l, AssignEntry::Value(c))
                 } else {
                     let (o, n) = circuit.outputs()[circ_out_idx];
-                    (*l, AIGEREntry::Var(o, n))
+                    (*l, AssignEntry::Var(o, n))
                 }
             }),
         )
@@ -398,7 +372,7 @@ fn from_aiger_int(
 pub fn from_aiger(
     input: &mut impl Read,
     binmode: bool,
-) -> Result<(Circuit<usize>, Vec<(usize, AIGEREntry)>), AIGERError> {
+) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), AIGERError> {
     use gategen::boolvar::*;
     let aig = if binmode {
         let parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
