@@ -195,7 +195,14 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
     out
 }
 
-fn gen_model_circuit(model: String, model_map: &mut HashMap<String, Model>) {}
+fn gen_model_circuit(model_name: String, model_map: &mut HashMap<String, Model>) {
+    let model = model_map.get(&model_name).unwrap();
+    // all subcircuit must be resolved and they must have generated circuits.
+    assert!(model
+        .subcircuits
+        .iter()
+        .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
+}
 
 fn resolve_model(top: String, model_map: &mut HashMap<String, Model>) {}
 
