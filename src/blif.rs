@@ -1,3 +1,4 @@
+use crate::AssignEntry;
 use gatesim::*;
 
 use crate::blif_pla::*;
@@ -159,6 +160,25 @@ struct Model {
     gates: Vec<Gate>,
     subcircuits: Vec<Subcircuit>,
     circuit: Option<TableCircuit>,
+}
+
+#[derive(Clone, Debug)]
+struct MappingKey {
+    model: String,
+    wire: String,
+}
+
+pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
+    let mut out = String::new();
+    for (k, t) in map {
+        out += &k.model;
+        out.push(':');
+        out += &k.wire;
+        out.push(' ');
+        out += &t.to_string();
+        out.push('\n');
+    }
+    out
 }
 
 fn resolve_model(top: String, model_map: &mut HashMap<String, Model>) {}
