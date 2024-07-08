@@ -290,7 +290,7 @@ pub(crate) fn gen_pla_circuit_with_two_methods(
         //     pla_total_gate_num,
         //     (1 << var_num) / 6
         // );
-        if pla_total_gate_num >= (1 << var_num) / 6 {
+        if pla_total_gate_num >= (1 << var_num) / 7 {
             // if total gate number from PLA circuit is greater than (max_comb_num / 10)
             let table = pla_to_truth_table(var_num, set_value, pla);
             let table_circuit = gen_booltable_circuit_by_xor_table(cache, &table);
