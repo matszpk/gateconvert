@@ -192,6 +192,7 @@ fn pla_to_truth_table(
     assert!(var_num < (usize::BITS - 1) as usize);
     let mut out_table = vec![!set_value; 1 << var_num];
     for (entry, _, _) in pla {
+        assert_eq!(var_num, entry.len());
         if entry.iter().any(|c| *c == PLACell::Unknown) {
             let unknowns = entry
                 .iter()
