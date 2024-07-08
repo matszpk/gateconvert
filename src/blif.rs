@@ -195,6 +195,8 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
     out
 }
 
+fn gen_model_circuit(model: String, model_map: &mut HashMap<String, Model>) {}
+
 fn resolve_model(top: String, model_map: &mut HashMap<String, Model>) {}
 
 #[cfg(test)]
