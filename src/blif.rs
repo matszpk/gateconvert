@@ -199,10 +199,10 @@ enum BLIFError {
 // structures of BLIF
 
 #[derive(Clone, Debug)]
-struct Gate<'a> {
+struct Gate {
     params: Vec<String>,
     output: String,
-    circuit: &'a TableCircuit,
+    circuit: TableCircuit,
 }
 
 #[derive(Clone, Debug)]
@@ -225,12 +225,12 @@ enum CircuitMapping {
 }
 
 #[derive(Clone, Debug)]
-struct Model<'a> {
+struct Model {
     inputs: Vec<String>,
     outputs: Vec<String>,
     latches: Vec<(String, String)>,
     clocks: Vec<String>,
-    gates: Vec<Gate<'a>>,
+    gates: Vec<Gate>,
     subcircuits: Vec<Subcircuit>,
     // circuit: format:
     // first element - table circuit - same circuit,
@@ -259,16 +259,31 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct GateCacheKey {
+pub(crate) struct GateCacheKey {
     var_num: usize,
     cells: Vec<PLACell>,
     set_value: bool,
 }
 
-type GateCache = HashMap<GateCacheKey, TableCircuit>;
-type ModelMap<'a> = HashMap<String, Model<'a>>;
+impl GateCacheKey {
+    fn new(var_num: usize, table: &[(Vec<PLACell>, bool, usize)], set_value: bool) -> Self {
+        Self {
+            var_num,
+            cells: table
+                .iter()
+                .map(|(e, _, _)| e)
+                .flatten()
+                .copied()
+                .collect::<Vec<_>>(),
+            set_value,
+        }
+    }
+}
 
-fn gen_model_circuit<'a>(model_name: String, model_map: &mut ModelMap<'a>) {
+type GateCache = HashMap<GateCacheKey, TableCircuit>;
+type ModelMap = HashMap<String, Model>;
+
+fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) {
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
@@ -277,14 +292,14 @@ fn gen_model_circuit<'a>(model_name: String, model_map: &mut ModelMap<'a>) {
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
 }
 
-fn resolve_model<'a>(top: String, model_map: &mut ModelMap<'a>) {}
+fn resolve_model(top: String, model_map: &mut ModelMap) {}
 
-fn parse_model<'a, R: Read>(
+fn parse_model<R: Read>(
     filename: &str,
     reader: &mut BLIFTokensReader<R>,
     circuit_cache: &mut CircuitCache,
-    gate_cache: &'a mut GateCache,
-    model_map: &mut ModelMap<'a>,
+    gate_cache: &mut GateCache,
+    model_map: &mut ModelMap,
 ) -> Result<(), BLIFError> {
     // get model name
     let mut model_name = String::new();
@@ -350,7 +365,36 @@ fn parse_model<'a, R: Read>(
                 // remove all entries with different set value
                 pla_table.retain(|(_, cur_set_value, _)| last_set_value == *cur_set_value);
                 pla_table.dedup_by(|(entry1, _, _), (entry2, _, _)| entry1 == entry2);
-                // create key - to find gate circuit.
+
+                let tbl_circuit = if var_num * pla_table.len() < 64 {
+                    // create key - to find gate circuit.
+                    let gc_key = GateCacheKey::new(var_num, pla_table.as_slice(), last_set_value);
+                    // check wether is in gate cache
+                    if let Some(tbl_circuit) = gate_cache.get(&gc_key) {
+                        tbl_circuit.clone()
+                    } else {
+                        let tbl_circuit = gen_pla_circuit_with_two_methods(
+                            circuit_cache,
+                            var_num,
+                            last_set_value,
+                            &pla_table,
+                        );
+                        gate_cache.insert(gc_key, tbl_circuit.clone());
+                        tbl_circuit
+                    }
+                } else {
+                    gen_pla_circuit_with_two_methods(
+                        circuit_cache,
+                        var_num,
+                        last_set_value,
+                        &pla_table,
+                    )
+                };
+                model.gates.push(Gate {
+                    params: line[1..var_num + 1].to_vec(),
+                    output: line.last().unwrap().clone(),
+                    circuit: tbl_circuit,
+                });
                 reader.unread_tokens(); // undo last read
             }
             ".inputs" => {
