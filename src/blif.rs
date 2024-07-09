@@ -195,7 +195,17 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
     out
 }
 
-fn gen_model_circuit<'a>(model_name: String, model_map: &mut HashMap<String, Model<'a>>) {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct GateCacheKey {
+    var_num: usize,
+    cells: Vec<PLACell>,
+    set_value: bool,
+}
+
+type GateCache = HashMap<GateCacheKey, TableCircuit>;
+type ModelMap<'a> = HashMap<String, Model<'a>>;
+
+fn gen_model_circuit<'a>(model_name: String, model_map: &mut ModelMap<'a>) {
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
@@ -204,7 +214,15 @@ fn gen_model_circuit<'a>(model_name: String, model_map: &mut HashMap<String, Mod
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
 }
 
-fn resolve_model<'a>(top: String, model_map: &mut HashMap<String, Model<'a>>) {}
+fn resolve_model<'a>(top: String, model_map: &mut ModelMap<'a>) {}
+
+fn parse_model<'a>(
+    mut input: impl Read,
+    gate_cache: &'a mut GateCache,
+    model_map: &mut ModelMap<'a>,
+) {
+    // HashMap::new()
+}
 
 #[cfg(test)]
 mod tests {
