@@ -90,6 +90,8 @@ pub fn to_blif(
 struct BLIFTokensReader<R: Read> {
     br: BufReader<R>,
     line_no: usize,
+    last: Option<(usize, Vec<String>)>,
+    prev: bool,
 }
 
 impl<R: Read> BLIFTokensReader<R> {
@@ -97,11 +99,26 @@ impl<R: Read> BLIFTokensReader<R> {
         Self {
             br: BufReader::new(r),
             line_no: 1,
+            last: None,
+            prev: false,
         }
+    }
+
+    fn unread_tokens(&mut self) {
+        assert!(self.last.is_some());
+        self.prev = true;
     }
 
     // returns line number and tokens
     fn read_tokens(&mut self) -> io::Result<Option<(usize, Vec<String>)>> {
+        if self.prev {
+            self.prev = false;
+            if let Some(l) = self.last.take() {
+                return Ok(Some(l));
+            } else {
+                panic!("No previous result!");
+            }
+        }
         let mut line = String::new();
         let mut current_line_no;
         loop {
@@ -138,10 +155,11 @@ impl<R: Read> BLIFTokensReader<R> {
                 break;
             }
         }
-        Ok(Some((
+        self.last = Some((
             current_line_no,
             line.split_whitespace().map(|x| x.to_string()).collect(),
-        )))
+        ));
+        Ok(self.last.clone())
     }
 }
 
