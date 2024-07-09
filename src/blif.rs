@@ -351,6 +351,7 @@ fn parse_model<R: Read>(
                 let mut last_set_value = true;
                 let var_num = line.len() - 2;
 
+                // TODO: check whether output is not in inputs or clocks of model
                 if !all_outputs.insert(line.last().unwrap().clone()) {
                     // if not already newly inserted
                     return Err(BLIFError::AlreadyDefinedAsOutput(
