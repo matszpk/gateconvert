@@ -237,7 +237,7 @@ fn gen_pla_table_circuit(
         let mut whole_expr = BoolVar::from(!set_value);
         for (entry, _, _) in pla {
             assert_eq!(var_num, entry.len());
-            let mut entry_expr =
+            let entry_expr =
                 entry
                     .iter()
                     .enumerate()
