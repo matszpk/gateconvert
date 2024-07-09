@@ -210,7 +210,7 @@ struct Gate {
 #[derive(Clone, Debug)]
 struct Subcircuit {
     model: String,
-    mappings: Vec<String>,
+    mappings: Vec<(String, String)>,
     // data for error handling
     filename: String,
     line_no: usize,
