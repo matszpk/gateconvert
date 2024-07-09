@@ -239,8 +239,8 @@ struct Model {
     // circuit: format:
     // first element - table circuit - same circuit,
     // second element - circuit mapping: in form:
-    //     value - (name of wire, mapping to circuit)
-    circuit: Option<(TableCircuit, Vec<(String, CircuitMapping)>)>,
+    //     value - (name of model, name of wire, mapping to circuit)
+    circuit: Option<(TableCircuit, Vec<(String, String, CircuitMapping)>)>,
 }
 
 #[derive(Clone, Debug)]
