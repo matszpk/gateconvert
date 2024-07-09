@@ -194,6 +194,8 @@ enum BLIFError {
     UnsupportedGate(String, usize),
     #[error("{0}:{1}: Bad gate PLA table")]
     BadGateTable(String, usize),
+    #[error("{0}:{1}: Bad subcircuit mapping")]
+    BadSubcircuitMapping(String, usize),
     #[error("{0}:{1}: Alrady defined as output")]
     AlreadyDefinedAsOutput(String, usize),
 }
@@ -458,6 +460,34 @@ fn parse_model<R: Read>(
             }
             ".subckt" => {
                 after_model_decls = true;
+                if line.len() < 3 {
+                    return Err(BLIFError::TooFewParameters(filename.to_string(), line_no));
+                }
+                // check whether all parameters in form 'A=C': if in parameter
+                // '=' is not last and not first.
+                if !line[2..].iter().all(|s| {
+                    s.find('=')
+                        .map(|p| p != 0 && p != s.len() - 1)
+                        .unwrap_or(false)
+                }) {
+                    return Err(BLIFError::BadSubcircuitMapping(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                model.subcircuits.push(Subcircuit {
+                    model: line[2].clone(),
+                    mappings: line[2..]
+                        .iter()
+                        .map(|s| {
+                            let (s1, s2) = s.split_at(s.find('=').unwrap());
+                            (s1.to_string(), s2.to_string())
+                        })
+                        .collect::<Vec<_>>(),
+                    // data for error handling
+                    filename: filename.to_string(),
+                    line_no,
+                });
             }
             ".start_kiss" => {
                 after_model_decls = true;
@@ -477,6 +507,8 @@ fn parse_model<R: Read>(
         }
     }
     // next phase - checking graph of gates and subcircuits - check whether graph have cycles.
+    // next phase will be done while resolving graph of models.
+    model_map.insert(model_name, model);
     Ok(())
 }
 
