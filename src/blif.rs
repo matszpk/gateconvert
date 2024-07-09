@@ -174,12 +174,16 @@ enum BLIFError {
     NoModelName(String, usize),
     #[error("{0}:{1}: Expected .end")]
     NoEnd(String, usize),
+    #[error("{0}:{1}: Model declarations in model commands")]
+    ModelDeclsInCommands(String, usize),
     #[error("{0}:{1}: Name {2} of model already used")]
     ModelNameUsed(String, usize, String),
     #[error("{0}:{1}: Model with name {2} is undefned")]
     UnknownModel(String, usize, String),
     #[error("{0}:{1}: Parameters to model {2} doesn't match")]
     ModelParamMatch(String, usize, String),
+    #[error("{0}:{1}: Too few parameters")]
+    TooFewParameters(String, usize),
     #[error("{0}:{1}: Unsupported latch input and output")]
     UnsupportedLatch(String, usize),
     #[error("{0}:{1}: Unsupported External Don't Care")]
@@ -298,23 +302,81 @@ fn parse_model<'a, R: Read>(
             );
         }
     }
-    let model_inputs = HashSet::<String>::new();
-    let model_outputs = HashSet::<String>::new();
-    let model_clocks = HashSet::<String>::new();
-    let mut after_model_defs = false;
+
+    let mut model = Model {
+        inputs: vec![],
+        outputs: vec![],
+        latches: vec![],
+        clocks: vec![],
+        gates: vec![],
+        subcircuits: vec![],
+        circuit: None,
+    };
+    let mut model_input_set = HashSet::new();
+    let mut model_output_set = HashSet::new();
+    let mut after_model_decls = false;
     while let Some((line_no, line)) = reader.read_tokens()? {
         match line[0].as_str() {
             ".names" => {
                 // gate
+                after_model_decls = true;
+                reader.unread_tokens(); // undo last read
             }
-            ".inputs" => {}
-            ".outputs" => {}
-            ".clocks" => {}
-            ".latch" => {}
-            ".subckt" => {}
-            ".start_kiss" => {}
-            ".gate" | ".mlatch" => {}
+            ".inputs" => {
+                if after_model_decls {
+                    return Err(BLIFError::ModelDeclsInCommands(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                model.inputs.extend(line[1..].iter().cloned());
+                model_input_set.extend(line[1..].iter().cloned());
+            }
+            ".outputs" => {
+                if after_model_decls {
+                    return Err(BLIFError::ModelDeclsInCommands(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                model.outputs.extend(line[1..].iter().cloned());
+                model_output_set.extend(line[1..].iter().cloned());
+            }
+            ".clocks" => {
+                if after_model_decls {
+                    return Err(BLIFError::ModelDeclsInCommands(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                model.clocks.extend(line[1..].iter().cloned());
+            }
+            ".latch" => {
+                after_model_decls = true;
+                if line.len() < 3 {
+                    return Err(BLIFError::TooFewParameters(filename.to_string(), line_no));
+                }
+                if !model_output_set.contains(&line[1]) {
+                    return Err(BLIFError::UnsupportedLatch(filename.to_string(), line_no));
+                }
+                if !model_input_set.contains(&line[2]) {
+                    return Err(BLIFError::UnsupportedLatch(filename.to_string(), line_no));
+                }
+                model.latches.push((line[1].clone(), line[2].clone()));
+            }
+            ".subckt" => {
+                after_model_decls = true;
+            }
+            ".start_kiss" => {
+                after_model_decls = true;
+                return Err(BLIFError::UnsupportedFSM(filename.to_string(), line_no));
+            }
+            ".gate" | ".mlatch" => {
+                after_model_decls = true;
+                return Err(BLIFError::UnsupportedGate(filename.to_string(), line_no));
+            }
             _ => {
+                after_model_decls = true;
                 eprintln!(
                     "Warning: {}:{}: Unknown directive {}",
                     filename, line_no, line[0]
