@@ -192,6 +192,8 @@ enum BLIFError {
     UnsupportedFSM(String, usize),
     #[error("{0}:{1}: Unsupported library gate")]
     UnsupportedGate(String, usize),
+    #[error("{0}:{1}: Bad gate PLA table")]
+    BadGateTable(String, usize),
 }
 
 // structures of BLIF
@@ -322,10 +324,32 @@ fn parse_model<'a, R: Read>(
             ".names" => {
                 // gate
                 after_model_decls = true;
-                reader.unread_tokens(); // undo last read
                 if line.len() < 2 {
                     return Err(BLIFError::TooFewParameters(filename.to_string(), line_no));
                 }
+                all_names.extend(line[1..].iter().cloned());
+                let mut pla_table = vec![];
+                let mut last_set_value = true;
+                let var_num = line.len() - 2;
+                while let Some((line_no, line)) = reader.read_tokens()? {
+                    if let Some((entry, set_value, line_no)) =
+                        pla_entry_from_tokens(var_num, line_no, &line)
+                    {
+                        pla_table.push((entry, set_value, line_no));
+                        last_set_value = set_value;
+                    } else {
+                        if !line[0].starts_with('.') {
+                            return Err(BLIFError::BadGateTable(filename.to_string(), line_no));
+                        }
+                        break;
+                    }
+                }
+                pla_table.sort_by_key(|(entry, _, line_no)| (entry.clone(), *line_no));
+                // remove all entries with different set value
+                pla_table.retain(|(_, cur_set_value, _)| last_set_value == *cur_set_value);
+                pla_table.dedup_by_key(|(entry, _, _)| entry.clone());
+                // create key - to find gate circuit.
+                reader.unread_tokens(); // undo last read
             }
             ".inputs" => {
                 if after_model_decls {

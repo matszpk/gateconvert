@@ -185,12 +185,14 @@ pub(crate) enum PLACell {
 }
 
 pub(crate) fn pla_entry_from_tokens(
+    var_num: usize,
     line_no: usize,
     tokens: &[String],
 ) -> Option<(Vec<PLACell>, bool, usize)> {
     if tokens.len() < 2 {
         return None;
-    } else if let Some(entry) = tokens[0]
+    }
+    if let Some(entry) = tokens[0]
         .chars()
         .map(|c| match c {
             '0' => Some(PLACell::Zero),
@@ -200,6 +202,9 @@ pub(crate) fn pla_entry_from_tokens(
         })
         .collect::<Option<Vec<_>>>()
     {
+        if entry.len() != var_num {
+            return None;
+        };
         let set_value = match tokens[1].chars().next() {
             Some('0') => false,
             Some('1') => true,
