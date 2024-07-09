@@ -199,6 +199,7 @@ enum BLIFError {
 #[derive(Clone, Debug)]
 struct Gate<'a> {
     params: Vec<String>,
+    output: String,
     circuit: &'a TableCircuit,
 }
 
@@ -315,12 +316,16 @@ fn parse_model<'a, R: Read>(
     let mut model_input_set = HashSet::new();
     let mut model_output_set = HashSet::new();
     let mut after_model_decls = false;
+    let mut all_names = HashSet::new();
     while let Some((line_no, line)) = reader.read_tokens()? {
         match line[0].as_str() {
             ".names" => {
                 // gate
                 after_model_decls = true;
                 reader.unread_tokens(); // undo last read
+                if line.len() < 2 {
+                    return Err(BLIFError::TooFewParameters(filename.to_string(), line_no));
+                }
             }
             ".inputs" => {
                 if after_model_decls {
@@ -331,6 +336,7 @@ fn parse_model<'a, R: Read>(
                 }
                 model.inputs.extend(line[1..].iter().cloned());
                 model_input_set.extend(line[1..].iter().cloned());
+                all_names.extend(line[1..].iter().cloned());
             }
             ".outputs" => {
                 if after_model_decls {
@@ -341,6 +347,7 @@ fn parse_model<'a, R: Read>(
                 }
                 model.outputs.extend(line[1..].iter().cloned());
                 model_output_set.extend(line[1..].iter().cloned());
+                all_names.extend(line[1..].iter().cloned());
             }
             ".clocks" => {
                 if after_model_decls {
@@ -350,6 +357,7 @@ fn parse_model<'a, R: Read>(
                     ));
                 }
                 model.clocks.extend(line[1..].iter().cloned());
+                all_names.extend(line[1..].iter().cloned());
             }
             ".latch" => {
                 after_model_decls = true;
