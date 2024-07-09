@@ -6,11 +6,9 @@ use gategen::VarLit;
 use gatesim::*;
 
 use std::cell::RefCell;
-use std::env;
 use std::fmt::Debug;
 use std::ops::Neg;
 use std::rc::Rc;
-use std::str::FromStr;
 
 pub fn dynint_xor_ite<T, const SIGN: bool>(
     c: BoolExprNode<T>,

@@ -303,7 +303,7 @@ fn parse_model<R: Read>(
     reader: &mut BLIFTokensReader<R>,
     circuit_cache: &mut CircuitCache,
     gate_cache: &mut GateCache,
-) -> Result<Model, BLIFError> {
+) -> Result<(String, Model), BLIFError> {
     // get model name
     let mut model_name = String::new();
     while let Some((line_no, line)) = reader.read_tokens()? {
@@ -507,7 +507,7 @@ fn parse_model<R: Read>(
     }
     // next phase - checking graph of gates and subcircuits - check whether graph have cycles.
     // next phase will be done while resolving graph of models.
-    Ok(model)
+    Ok((model_name, model))
 }
 
 #[cfg(test)]

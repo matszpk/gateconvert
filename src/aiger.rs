@@ -4,7 +4,7 @@ use flussab_aiger::*;
 use gatesim::*;
 
 use std::collections::HashMap;
-use std::fmt::{self, Debug, Display};
+use std::fmt::Debug;
 use std::io::{self, Read, Write};
 
 use crate::AssignEntry;

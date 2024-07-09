@@ -5,7 +5,6 @@ use gatesim::*;
 use static_init::dynamic;
 use std::collections::HashMap;
 
-use std::cmp::Ordering;
 use std::hash::Hash;
 use std::str::FromStr;
 
