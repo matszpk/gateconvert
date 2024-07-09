@@ -202,14 +202,14 @@ enum BLIFError {
 
 // structures of BLIF
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Gate {
     params: Vec<String>,
     output: String,
     circuit: TableCircuit,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Subcircuit {
     model: String,
     mappings: Vec<(String, String)>,
@@ -228,7 +228,7 @@ enum CircuitMapping {
     Clock(usize),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Model {
     inputs: Vec<String>,
     outputs: Vec<String>,
