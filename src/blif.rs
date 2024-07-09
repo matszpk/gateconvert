@@ -139,6 +139,33 @@ impl<R: Read> BLIFTokensReader<R> {
     }
 }
 
+// error
+#[derive(thiserror::Error, Debug)]
+enum BLIFError {
+    #[error("IO error: {0}")]
+    IOError(#[from] io::Error),
+    #[error("{0}:{1}: Expected .model")]
+    NoModelError(String, usize),
+    #[error("{0}:{1}: Expected .end")]
+    NoEndError(String, usize),
+    #[error("{0}:{1}: Name {2} of model already used")]
+    ModelNameUsedError(String, usize, String),
+    #[error("{0}:{1}: Model with name {2} is undefned")]
+    UnknownModelError(String, usize, String),
+    #[error("{0}:{1}: Parameters to model {2} doesn't match")]
+    ModelParamMatchError(String, usize, String),
+    #[error("{0}:{1}: Unsupported latch input and output")]
+    UnsupportedLatchError(String, usize),
+    #[error("{0}:{1}: Unsupported External Don't Care")]
+    UnsupportedEXDCError(String, usize),
+    #[error("{0}:{1}: Unsupported FSM definition")]
+    UnsupportedFSMError(String, usize),
+    #[error("{0}:{1}: Unsupported library gate")]
+    UnsupportedGateError(String, usize),
+}
+
+// structures of BLIF
+
 #[derive(Clone, Debug)]
 struct Gate<'a> {
     params: Vec<String>,
@@ -149,6 +176,9 @@ struct Gate<'a> {
 struct Subcircuit {
     model: String,
     mappings: Vec<String>,
+    // data for error handling
+    filename: String,
+    line_no: usize,
 }
 
 // Circuit mapping - values are circuit input or circuit output
@@ -216,12 +246,14 @@ fn gen_model_circuit<'a>(model_name: String, model_map: &mut ModelMap<'a>) {
 
 fn resolve_model<'a>(top: String, model_map: &mut ModelMap<'a>) {}
 
-fn parse_model<'a>(
-    mut input: impl Read,
+fn parse_model<'a, R: Read>(
+    reader: &mut BLIFTokensReader<R>,
     gate_cache: &'a mut GateCache,
     model_map: &mut ModelMap<'a>,
-) {
+) -> Result<(), BLIFError> {
     // HashMap::new()
+    if let Ok(Some(line)) = reader.read_tokens() {}
+    Ok(())
 }
 
 #[cfg(test)]
