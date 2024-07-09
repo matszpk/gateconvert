@@ -432,7 +432,6 @@ fn parse_model<R: Read>(
                 model.outputs.extend(line[1..].iter().cloned());
                 model_output_set.extend(line[1..].iter().cloned());
                 all_names.extend(line[1..].iter().cloned());
-                all_outputs.extend(line[1..].iter().cloned());
             }
             ".clocks" => {
                 if after_model_decls {
@@ -585,6 +584,47 @@ mod tests {
 .names a b \
 c   # ‘\’ here only to demonstrate its use
 11 1
+"##
+            )
+        );
+    }
+
+    fn parse_model_helper(text: &str) -> Result<(String, Model), String> {
+        let mut circuit_cache = CircuitCache::new();
+        let mut gate_cache = GateCache::new();
+        let mut bytes = BLIFTokensReader::new(text.as_bytes());
+        parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
+            .map_err(|e| e.to_string())
+    }
+
+    fn strs_to_vec_string<'a>(iter: impl IntoIterator<Item = &'a str>) -> Vec<String> {
+        iter.into_iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn test_parse_model() {
+        assert_eq!(
+            Ok((
+                "simple".to_string(),
+                Model {
+                    inputs: vec![],
+                    outputs: strs_to_vec_string(["x"]),
+                    latches: vec![],
+                    clocks: vec![],
+                    gates: vec![Gate {
+                        params: vec![],
+                        output: "x".to_string(),
+                        circuit: TableCircuit::Value(false),
+                    }],
+                    subcircuits: vec![],
+                    circuit: None,
+                }
+            )),
+            parse_model_helper(
+                r##".model simple
+.outputs x
+.names x
+.end
 "##
             )
         );
