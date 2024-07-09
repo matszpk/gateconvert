@@ -344,10 +344,12 @@ fn parse_model<'a, R: Read>(
                         break;
                     }
                 }
-                pla_table.sort_by_key(|(entry, _, line_no)| (entry.clone(), *line_no));
+                pla_table.sort_by(|(entry1, _, line_no1), (entry2, _, line_no2)| {
+                    (entry1, *line_no1).cmp(&(entry2, *line_no2))
+                });
                 // remove all entries with different set value
                 pla_table.retain(|(_, cur_set_value, _)| last_set_value == *cur_set_value);
-                pla_table.dedup_by_key(|(entry, _, _)| entry.clone());
+                pla_table.dedup_by(|(entry1, _, _), (entry2, _, _)| entry1 == entry2);
                 // create key - to find gate circuit.
                 reader.unread_tokens(); // undo last read
             }
