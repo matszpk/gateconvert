@@ -184,6 +184,35 @@ pub(crate) enum PLACell {
     One,
 }
 
+pub(crate) fn pla_entry_from_tokens(
+    line_no: usize,
+    tokens: &[String],
+) -> Option<(Vec<PLACell>, bool, usize)> {
+    if tokens.len() < 2 {
+        return None;
+    } else if let Some(entry) = tokens[0]
+        .chars()
+        .map(|c| match c {
+            '0' => Some(PLACell::Zero),
+            '-' => Some(PLACell::Unknown),
+            '1' => Some(PLACell::One),
+            _ => None,
+        })
+        .collect::<Option<Vec<_>>>()
+    {
+        let set_value = match tokens[1].chars().next() {
+            Some('0') => false,
+            Some('1') => true,
+            _ => {
+                return None;
+            }
+        };
+        Some((entry, set_value, line_no))
+    } else {
+        None
+    }
+}
+
 fn pla_to_truth_table(
     var_num: usize,
     set_value: bool,
