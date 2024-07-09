@@ -146,6 +146,8 @@ enum BLIFError {
     IOError(#[from] io::Error),
     #[error("{0}:{1}: Expected .model")]
     NoModelError(String, usize),
+    #[error("{0}:{1}: Expected model name")]
+    NoModelNameError(String, usize),
     #[error("{0}:{1}: Expected .end")]
     NoEndError(String, usize),
     #[error("{0}:{1}: Name {2} of model already used")]
@@ -247,12 +249,24 @@ fn gen_model_circuit<'a>(model_name: String, model_map: &mut ModelMap<'a>) {
 fn resolve_model<'a>(top: String, model_map: &mut ModelMap<'a>) {}
 
 fn parse_model<'a, R: Read>(
+    filename: &str,
     reader: &mut BLIFTokensReader<R>,
     gate_cache: &'a mut GateCache,
     model_map: &mut ModelMap<'a>,
 ) -> Result<(), BLIFError> {
-    // HashMap::new()
-    if let Ok(Some(line)) = reader.read_tokens() {}
+    while let Some((line_no, line)) = reader.read_tokens()? {
+        if line.is_empty() {
+            continue
+        }
+        if line[0] != ".model" {
+            return Err(BLIFError::NoModelError(filename.to_string(), line_no));
+        }
+        let model_name = if let Some(name) = line.get(1) {
+            name.clone()
+        } else {
+            return Err(BLIFError::NoModelNameError(filename.to_string(), line_no));
+        };
+    }
     Ok(())
 }
 
