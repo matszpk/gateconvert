@@ -12,7 +12,7 @@ use crate::AssignEntry;
 pub fn to_aiger(
     circuit: &Circuit<usize>,
     state_len: usize,
-    out: &mut impl Write,
+    out: impl Write,
     binmode: bool,
 ) -> io::Result<()> {
     let input_len = circuit.input_len();
@@ -370,7 +370,7 @@ fn from_aiger_int(
 // return: circuit, map for AIGER variables (input, latches and output)
 // format of AIGER map: (AIGER literal, AIGER Entry)
 pub fn from_aiger(
-    input: &mut impl Read,
+    input: impl Read,
     binmode: bool,
 ) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), AIGERError> {
     use gategen::boolvar::*;

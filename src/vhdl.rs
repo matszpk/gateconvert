@@ -12,7 +12,7 @@ pub fn to_vhdl(
     entity_name: &str,
     arch_name: &str,
     optimize_negs: bool,
-    out: &mut impl Write,
+    out: impl Write,
 ) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();

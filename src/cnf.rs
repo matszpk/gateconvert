@@ -36,9 +36,9 @@ fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFE
     formula.write(&mut CNFWriter::new(out))
 }
 
-pub fn to_cnf(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
+pub fn to_cnf(circuit: &Circuit<usize>, mut out: impl Write) -> Result<(), CNFError> {
     use cnfgen::boolvar::*;
-    callsys(|| to_cnf_int(circuit, out))
+    callsys(|| to_cnf_int(circuit, &mut out))
 }
 
 pub fn from_cnf_int(
@@ -77,7 +77,7 @@ pub fn from_cnf_int(
 }
 
 pub fn from_cnf(
-    input: &mut impl Read,
+    input: impl Read,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
     use gategen::boolvar::*;
     let mut parser = cnf::Parser::<isize>::from_read(input, cnf::Config::default())?;
