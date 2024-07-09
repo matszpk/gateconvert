@@ -462,6 +462,7 @@ fn parse_model<R: Read>(
             }
         }
     }
+    // next phase - checking graph of gates and subcircuits - check whether graph have cycles.
     Ok(())
 }
 
