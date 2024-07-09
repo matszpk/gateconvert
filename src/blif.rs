@@ -194,6 +194,8 @@ enum BLIFError {
     UnsupportedGate(String, usize),
     #[error("{0}:{1}: Bad gate PLA table")]
     BadGateTable(String, usize),
+    #[error("{0}:{1}: Alrady defined as output")]
+    AlreadyDefinedAsOutput(String, usize),
 }
 
 // structures of BLIF
@@ -334,6 +336,7 @@ fn parse_model<R: Read>(
     let mut model_output_set = HashSet::new();
     let mut after_model_decls = false;
     let mut all_names = HashSet::new();
+    let mut all_outputs = HashSet::new();
     while let Some((line_no, line)) = reader.read_tokens()? {
         match line[0].as_str() {
             ".names" => {
@@ -346,6 +349,15 @@ fn parse_model<R: Read>(
                 let mut pla_table = vec![];
                 let mut last_set_value = true;
                 let var_num = line.len() - 2;
+
+                if !all_outputs.insert(line.last().unwrap().clone()) {
+                    // if not already newly inserted
+                    return Err(BLIFError::AlreadyDefinedAsOutput(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+
                 while let Some((line_no, line)) = reader.read_tokens()? {
                     if let Some((entry, set_value, line_no)) =
                         pla_entry_from_tokens(var_num, line_no, &line)
@@ -359,6 +371,7 @@ fn parse_model<R: Read>(
                         break;
                     }
                 }
+
                 pla_table.sort_by(|(entry1, _, line_no1), (entry2, _, line_no2)| {
                     (entry1, *line_no1).cmp(&(entry2, *line_no2))
                 });
@@ -418,6 +431,7 @@ fn parse_model<R: Read>(
                 model.outputs.extend(line[1..].iter().cloned());
                 model_output_set.extend(line[1..].iter().cloned());
                 all_names.extend(line[1..].iter().cloned());
+                all_outputs.extend(line[1..].iter().cloned());
             }
             ".clocks" => {
                 if after_model_decls {
