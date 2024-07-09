@@ -60,7 +60,7 @@ fn parse_perfect_circuit_line(line: &str) -> (u32, Vec<usize>, Circuit<usize>) {
     (value, inputs, circuit)
 }
 
-type CircuitCache = HashMap<u16, (u32, Vec<usize>, Circuit<usize>)>;
+pub(crate) type CircuitCache = HashMap<u16, (u32, Vec<usize>, Circuit<usize>)>;
 
 fn gen_perfect_expr(cache: &mut CircuitCache, value: u16, inputvar: &UDynVarSys) -> BoolVarSys {
     if value == 0 {

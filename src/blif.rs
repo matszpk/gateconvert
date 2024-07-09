@@ -3,7 +3,7 @@ use gatesim::*;
 
 use crate::blif_pla::*;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 
 pub fn to_blif(
@@ -151,25 +151,25 @@ enum BLIFError {
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
     #[error("{0}:{1}: Expected .model")]
-    NoModelError(String, usize),
+    NoModel(String, usize),
     #[error("{0}:{1}: Expected model name")]
-    NoModelNameError(String, usize),
+    NoModelName(String, usize),
     #[error("{0}:{1}: Expected .end")]
-    NoEndError(String, usize),
+    NoEnd(String, usize),
     #[error("{0}:{1}: Name {2} of model already used")]
-    ModelNameUsedError(String, usize, String),
+    ModelNameUsed(String, usize, String),
     #[error("{0}:{1}: Model with name {2} is undefned")]
-    UnknownModelError(String, usize, String),
+    UnknownModel(String, usize, String),
     #[error("{0}:{1}: Parameters to model {2} doesn't match")]
-    ModelParamMatchError(String, usize, String),
+    ModelParamMatch(String, usize, String),
     #[error("{0}:{1}: Unsupported latch input and output")]
-    UnsupportedLatchError(String, usize),
+    UnsupportedLatch(String, usize),
     #[error("{0}:{1}: Unsupported External Don't Care")]
-    UnsupportedEXDCError(String, usize),
+    UnsupportedEXDC(String, usize),
     #[error("{0}:{1}: Unsupported FSM definition")]
-    UnsupportedFSMError(String, usize),
+    UnsupportedFSM(String, usize),
     #[error("{0}:{1}: Unsupported library gate")]
-    UnsupportedGateError(String, usize),
+    UnsupportedGate(String, usize),
 }
 
 // structures of BLIF
@@ -257,18 +257,52 @@ fn resolve_model<'a>(top: String, model_map: &mut ModelMap<'a>) {}
 fn parse_model<'a, R: Read>(
     filename: &str,
     reader: &mut BLIFTokensReader<R>,
+    circuit_cache: &mut CircuitCache,
     gate_cache: &'a mut GateCache,
     model_map: &mut ModelMap<'a>,
 ) -> Result<(), BLIFError> {
-    if let Some((line_no, line)) = reader.read_tokens()? {
-        if line[0] != ".model" {
-            return Err(BLIFError::NoModelError(filename.to_string(), line_no));
-        }
-        let model_name = if let Some(name) = line.get(1) {
-            name.clone()
+    // get model name
+    let mut model_name = String::new();
+    while let Some((line_no, line)) = reader.read_tokens()? {
+        if line[0] == ".model" {
+            if let Some(name) = line.get(1) {
+                model_name = name.clone();
+                break;
+            } else {
+                return Err(BLIFError::NoModelName(filename.to_string(), line_no));
+            }
+        } else if line[0] == ".exdc" {
+            return Err(BLIFError::UnsupportedEXDC(filename.to_string(), line_no));
         } else {
-            return Err(BLIFError::NoModelNameError(filename.to_string(), line_no));
-        };
+            eprintln!(
+                "Warning: {}:{}: Unknown directive {}",
+                filename, line_no, line[0]
+            );
+        }
+    }
+    let model_inputs = HashSet::<String>::new();
+    let model_outputs = HashSet::<String>::new();
+    let model_clocks = HashSet::<String>::new();
+    let mut after_model_defs = false;
+    while let Some((line_no, line)) = reader.read_tokens()? {
+        match line[0].as_str() {
+            ".names" => {
+                // gate
+            }
+            ".inputs" => {}
+            ".outputs" => {}
+            ".clocks" => {}
+            ".latch" => {}
+            ".subckt" => {}
+            ".start_kiss" => {}
+            ".gate" | ".mlatch" => {}
+            _ => {
+                eprintln!(
+                    "Warning: {}:{}: Unknown directive {}",
+                    filename, line_no, line[0]
+                );
+            }
+        }
     }
     Ok(())
 }
