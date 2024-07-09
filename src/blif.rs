@@ -103,39 +103,45 @@ impl<R: Read> BLIFTokensReader<R> {
     // returns line number and tokens
     fn read_tokens(&mut self) -> io::Result<Option<(usize, Vec<String>)>> {
         let mut line = String::new();
-        let current_line_no = self.line_no;
-        let mut empty = true;
-        while self.br.read_line(&mut line)? != 0 {
-            empty = false;
-            self.line_no += 1;
-            // remove line delimiter
-            if line.ends_with('\n') {
-                line.pop();
-                if line.ends_with('\r') {
+        let mut current_line_no;
+        loop {
+            current_line_no = self.line_no;
+            let mut empty = true;
+            while self.br.read_line(&mut line)? != 0 {
+                empty = false;
+                self.line_no += 1;
+                // remove line delimiter
+                if line.ends_with('\n') {
                     line.pop();
+                    if line.ends_with('\r') {
+                        line.pop();
+                    }
+                }
+                if let Some(p) = line.bytes().position(|x| x == b'#') {
+                    // remove comment
+                    line.truncate(p);
+                    break;
+                } else if line.ends_with('\\') {
+                    line.pop(); // remove '\\'
+                } else {
+                    break;
                 }
             }
-            if let Some(p) = line.bytes().position(|x| x == b'#') {
-                // remove comment
-                line.truncate(p);
-                break;
-            } else if line.ends_with('\\') {
-                line.pop(); // remove '\\'
-            } else {
+            // trim line
+            if empty {
+                // if empty - end of file
+                return Ok(None);
+            }
+            line = line.trim().to_string();
+            if !line.is_empty() {
+                // if line is not empty
                 break;
             }
         }
-        Ok(if !empty {
-            Some((
-                current_line_no,
-                line.trim()
-                    .split_whitespace()
-                    .map(|x| x.to_string())
-                    .collect(),
-            ))
-        } else {
-            None
-        })
+        Ok(Some((
+            current_line_no,
+            line.split_whitespace().map(|x| x.to_string()).collect(),
+        )))
     }
 }
 
@@ -254,10 +260,7 @@ fn parse_model<'a, R: Read>(
     gate_cache: &'a mut GateCache,
     model_map: &mut ModelMap<'a>,
 ) -> Result<(), BLIFError> {
-    while let Some((line_no, line)) = reader.read_tokens()? {
-        if line.is_empty() {
-            continue
-        }
+    if let Some((line_no, line)) = reader.read_tokens()? {
         if line[0] != ".model" {
             return Err(BLIFError::NoModelError(filename.to_string(), line_no));
         }
@@ -307,6 +310,10 @@ mod tests {
             blif_reader_helper(" ala bum bm  \n  beta xx \n")
         );
         assert_eq!(
+            tokens_to_vectors([(1, vec!["ala", "bum", "bm"]), (2, vec!["beta", "xx"])]),
+            blif_reader_helper(" ala bum bm  \n  beta xx \n\n#  \n")
+        );
+        assert_eq!(
             tokens_to_vectors([(1, vec!["ala", "bum"]), (2, vec!["beta", "xx"])]),
             blif_reader_helper(" ala bum # bm  \n  beta xx # yyy \n")
         );
@@ -326,8 +333,6 @@ mod tests {
                 (4, vec![".names", "a", "b", "c"]),
                 (5, vec!["11", "1"]),
                 (6, vec![".end"]),
-                (7, vec![]),
-                (8, vec![]),
                 (9, vec![".names", "a", "b", "c"]),
                 (11, vec!["11", "1"])
             ]),
