@@ -492,14 +492,14 @@ fn test_to_blif() {
 .inputs i0
 .inputs i1
 .inputs i2
-.clock i3
-.clock i4
 .inputs i5
 .inputs i6
 .outputs o0
 .outputs o1
 .outputs o2
 .outputs o3
+.clock i3
+.clock i4
 .latch o0 i0
 .latch o1 i1
 .latch o2 i2

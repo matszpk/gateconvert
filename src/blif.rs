@@ -33,14 +33,14 @@ pub fn to_blif(
     for i in 0..state_len {
         writeln!(out, ".inputs i{}", i)?;
     }
-    for i in state_len..state_len + clock_num {
-        writeln!(out, ".clock i{}", i)?;
-    }
     for i in state_len + clock_num..input_len {
         writeln!(out, ".inputs i{}", i)?;
     }
     for i in 0..output_len {
         writeln!(out, ".outputs o{}", i)?;
+    }
+    for i in state_len..state_len + clock_num {
+        writeln!(out, ".clock i{}", i)?;
     }
     for i in 0..state_len {
         writeln!(out, ".latch o{0} i{0}", i)?;
