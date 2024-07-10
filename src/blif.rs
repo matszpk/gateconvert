@@ -682,8 +682,8 @@ c   # ‘\’ here only to demonstrate its use
             Ok((
                 "simple2".to_string(),
                 Model {
-                    inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f"]),
-                    outputs: strs_to_vec_string(["x", "y", "z", "w"]),
+                    inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f", "i"]),
+                    outputs: strs_to_vec_string(["x", "y", "z", "w", "t", "t1"]),
                     latches: strs2_to_vec_string([("x", "a"), ("y", "c")]),
                     clocks: strs_to_vec_string(["g", "h"]),
                     gates: vec![
@@ -715,7 +715,27 @@ c   # ‘\’ here only to demonstrate its use
                                 Circuit::from_str("{0 1 nor(0,1):0n}(2)").unwrap(),
                                 vec![Some(0), Some(1)],
                             )),
-                        }
+                        },
+                        Gate {
+                            params: strs_to_vec_string(["a", "y", "i"]),
+                            output: "t".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 nimpl(0,1):0n}(2)").unwrap(),
+                                vec![None, Some(0), Some(1)],
+                            )),
+                        },
+                        Gate {
+                            params: strs_to_vec_string(["h", "y", "z", "c"]),
+                            output: "t1".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str(
+                                    r##"{0 1 2 3 nor(1,2) and(1,2)
+nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
+                                )
+                                .unwrap(),
+                                vec![Some(0), Some(1), Some(2), Some(3)],
+                            )),
+                        },
                     ],
                     subcircuits: vec![],
                     circuit: None,
@@ -727,7 +747,9 @@ c   # ‘\’ here only to demonstrate its use
 .inputs c d
 .inputs e f
 .clocks g h
+.inputs i
 .outputs x y z w
+.outputs t t1
 .latch x a
 .latch y c
 .names a b x
@@ -747,6 +769,16 @@ c   # ‘\’ here only to demonstrate its use
 10 1
 01 1
 11 1
+.names a y i t
+100 1
+--1 0
+--1 1
+00- 1
+.names h y z c t1
+1-00 1
+-111 1
+10-0 1
+100- 1
 .end
 # model to ignore
 .model simple
