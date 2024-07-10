@@ -198,10 +198,10 @@ enum BLIFError {
     BadSubcircuitMapping(String, usize),
     #[error("{0}:{1}: Already defined as output")]
     AlreadyDefinedAsOutput(String, usize),
-    #[error("{0}:{1}: Defined as circuit input")]
-    DefinedAsCircuitInput(String, usize),
-    #[error("{0}:{1}: Defined as circuit clock")]
-    DefinedAsCircuitClock(String, usize),
+    #[error("{0}:{1}: Defined as model input")]
+    DefinedAsModelInput(String, usize),
+    #[error("{0}:{1}: Defined as model clock")]
+    DefinedAsModelClock(String, usize),
 }
 
 // structures of BLIF
@@ -358,14 +358,14 @@ fn parse_model<R: Read>(
 
                 // check whether output is not in inputs of model
                 if model_input_set.contains(line.last().unwrap()) {
-                    return Err(BLIFError::DefinedAsCircuitInput(
+                    return Err(BLIFError::DefinedAsModelInput(
                         filename.to_string(),
                         line_no,
                     ));
                 }
                 // check whether output is not in inputs of model
                 if model_clock_set.contains(line.last().unwrap()) {
-                    return Err(BLIFError::DefinedAsCircuitClock(
+                    return Err(BLIFError::DefinedAsModelClock(
                         filename.to_string(),
                         line_no,
                     ));
