@@ -1023,5 +1023,19 @@ x1 1
 "##
             )
         );
+        assert_eq!(
+            Err("top.blif:6: Already defined as output".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.names a b x
+10 1
+.names c d x
+01 1
+.end
+"##
+            )
+        );
     }
 }
