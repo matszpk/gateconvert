@@ -34,7 +34,7 @@ pub fn to_blif(
         writeln!(out, ".inputs i{}", i)?;
     }
     for i in state_len..state_len + clock_num {
-        writeln!(out, ".clocks i{}", i)?;
+        writeln!(out, ".clock i{}", i)?;
     }
     for i in state_len + clock_num..input_len {
         writeln!(out, ".inputs i{}", i)?;
@@ -202,6 +202,8 @@ enum BLIFError {
     DefinedAsModelInput(String, usize),
     #[error("{0}:{1}: Defined as model clock")]
     DefinedAsModelClock(String, usize),
+    #[error("{0}:{1}: Model input defined as input and clock")]
+    ModelInputAndClockBoth(String, usize),
 }
 
 // structures of BLIF
@@ -431,9 +433,15 @@ fn parse_model<R: Read>(
                 });
                 reader.unread_tokens(); // undo last read
             }
-            ".inputs" => {
+            ".input" | ".inputs" => {
                 if after_model_decls {
                     return Err(BLIFError::ModelDeclsInCommands(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                if line[1..].iter().any(|s| model_clock_set.contains(s)) {
+                    return Err(BLIFError::ModelInputAndClockBoth(
                         filename.to_string(),
                         line_no,
                     ));
@@ -442,7 +450,7 @@ fn parse_model<R: Read>(
                 model_input_set.extend(line[1..].iter().cloned());
                 all_names.extend(line[1..].iter().cloned());
             }
-            ".outputs" => {
+            ".output" | ".outputs" => {
                 if after_model_decls {
                     return Err(BLIFError::ModelDeclsInCommands(
                         filename.to_string(),
@@ -453,9 +461,15 @@ fn parse_model<R: Read>(
                 model_output_set.extend(line[1..].iter().cloned());
                 all_names.extend(line[1..].iter().cloned());
             }
-            ".clocks" => {
+            ".clock" => {
                 if after_model_decls {
                     return Err(BLIFError::ModelDeclsInCommands(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                if line[1..].iter().any(|s| model_input_set.contains(s)) {
+                    return Err(BLIFError::ModelInputAndClockBoth(
                         filename.to_string(),
                         line_no,
                     ));
@@ -755,7 +769,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
 .inputs a b
 .inputs c d
 .inputs e f
-.clocks g h
+.clock g h
 .inputs i
 .outputs x y z w
 .outputs t t1 x1 z1
@@ -843,6 +857,44 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
 1
 .names z
 0
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:1: Unsupported External Don't Care".to_string()),
+            parse_model_helper(
+                r##".exdc
+.names y
+1
+.names z
+0
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:3: Model input defined as input and clock".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b
+.clock a
+.outputs x
+.names a b x
+11 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:3: Model input defined as input and clock".to_string()),
+            parse_model_helper(
+                r##".model test1
+.clock a
+.inputs a b
+.outputs x
+.names a b x
+11 1
 .end
 "##
             )
