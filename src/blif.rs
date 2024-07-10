@@ -623,6 +623,13 @@ c   # ‘\’ here only to demonstrate its use
     fn strs_to_vec_string<'a>(iter: impl IntoIterator<Item = &'a str>) -> Vec<String> {
         iter.into_iter().map(|s| s.to_string()).collect()
     }
+    fn strs2_to_vec_string<'a>(
+        iter: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> Vec<(String, String)> {
+        iter.into_iter()
+            .map(|(s1, s2)| (s1.to_string(), s2.to_string()))
+            .collect()
+    }
 
     #[test]
     fn test_parse_model() {
@@ -672,10 +679,10 @@ c   # ‘\’ here only to demonstrate its use
             Ok((
                 "simple2".to_string(),
                 Model {
-                    inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f", "g", "h"]),
+                    inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f"]),
                     outputs: strs_to_vec_string(["x", "y", "z", "w"]),
-                    latches: vec![],
-                    clocks: vec![],
+                    latches: strs2_to_vec_string([("x", "a"), ("y", "c")]),
+                    clocks: strs_to_vec_string(["g", "h"]),
                     gates: vec![
                         Gate {
                             params: strs_to_vec_string(["a", "b"]),
@@ -716,8 +723,10 @@ c   # ‘\’ here only to demonstrate its use
 .inputs a b
 .inputs c d
 .inputs e f
-.inputs g h
+.clocks g h
 .outputs x y z w
+.latch x a
+.latch y c
 .names a b x
 00 1
 10 1
