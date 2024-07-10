@@ -517,6 +517,9 @@ fn parse_model<R: Read>(
                 after_model_decls = true;
                 return Err(BLIFError::UnsupportedGate(filename.to_string(), line_no));
             }
+            ".end" => {
+                break;
+            }
             _ => {
                 after_model_decls = true;
                 eprintln!(
@@ -744,6 +747,16 @@ c   # ‘\’ here only to demonstrate its use
 10 1
 01 1
 11 1
+.end
+# model to ignore
+.model simple
+.outputs x y
+.outputs z
+.names x
+.names y
+1
+.names z
+0
 .end
 "##
             )
