@@ -310,7 +310,9 @@ fn parse_model<R: Read>(
 ) -> Result<(String, Model), BLIFError> {
     // get model name
     let mut model_name = String::new();
+    let mut last_line_no = 1;
     while let Some((line_no, line)) = reader.read_tokens()? {
+        last_line_no = line_no;
         if line[0] == ".model" {
             if let Some(name) = line.get(1) {
                 model_name = name.clone();
@@ -321,10 +323,7 @@ fn parse_model<R: Read>(
         } else if line[0] == ".exdc" {
             return Err(BLIFError::UnsupportedEXDC(filename.to_string(), line_no));
         } else {
-            eprintln!(
-                "Warning: {}:{}: Unknown directive {}",
-                filename, line_no, line[0]
-            );
+            return Err(BLIFError::NoModel(filename.to_string(), line_no));
         }
     }
 
@@ -793,6 +792,50 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
 .end
 # model to ignore
 .model simple
+.outputs x y
+.outputs z
+.names x
+.names y
+1
+.names z
+0
+.end
+"##
+            )
+        );
+        // error handling
+        assert_eq!(
+            Err("top.blif:5: Model declarations in model commands".to_string()),
+            parse_model_helper(
+                r##".model simple
+.outputs x y
+.outputs z
+.names x
+.outputs t
+.names y
+1
+.names z
+0
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:2: Expected .model".to_string()),
+            parse_model_helper(
+                r##"
+.names y
+1
+.names z
+0
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:1: Expected model name".to_string()),
+            parse_model_helper(
+                r##".model
 .outputs x y
 .outputs z
 .names x
