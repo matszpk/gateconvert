@@ -630,7 +630,7 @@ c   # ‘\’ here only to demonstrate its use
                 "simple".to_string(),
                 Model {
                     inputs: vec![],
-                    outputs: strs_to_vec_string(["x", "y"]),
+                    outputs: strs_to_vec_string(["x", "y", "z"]),
                     latches: vec![],
                     clocks: vec![],
                     gates: vec![
@@ -643,6 +643,11 @@ c   # ‘\’ here only to demonstrate its use
                             params: vec![],
                             output: "y".to_string(),
                             circuit: TableCircuit::Value(true),
+                        },
+                        Gate {
+                            params: vec![],
+                            output: "z".to_string(),
+                            circuit: TableCircuit::Value(false),
                         }
                     ],
                     subcircuits: vec![],
@@ -651,10 +656,12 @@ c   # ‘\’ here only to demonstrate its use
             )),
             parse_model_helper(
                 r##".model simple
-.outputs x y
+.outputs x y z
 .names x
 .names y
 1
+.names z
+0
 .end
 "##
             )
