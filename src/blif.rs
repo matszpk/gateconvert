@@ -534,6 +534,7 @@ fn parse_model<R: Read>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     fn blif_reader_helper(text: &str) -> Vec<(usize, Vec<String>)> {
         let mut reader = BLIFTokensReader::new(text.as_bytes());
@@ -656,12 +657,84 @@ c   # ‘\’ here only to demonstrate its use
             )),
             parse_model_helper(
                 r##".model simple
-.outputs x y z
+.outputs x y
+.outputs z
 .names x
 .names y
 1
 .names z
 0
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Ok((
+                "simple2".to_string(),
+                Model {
+                    inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f", "g", "h"]),
+                    outputs: strs_to_vec_string(["x", "y", "z", "w"]),
+                    latches: vec![],
+                    clocks: vec![],
+                    gates: vec![
+                        Gate {
+                            params: strs_to_vec_string(["a", "b"]),
+                            output: "x".to_string(),
+                            circuit: TableCircuit::Value(true),
+                        },
+                        Gate {
+                            params: strs_to_vec_string(["c", "d"]),
+                            output: "y".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 nor(0,1):0}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        },
+                        Gate {
+                            params: strs_to_vec_string(["e", "f"]),
+                            output: "z".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 nimpl(0,1):0n}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        },
+                        Gate {
+                            params: strs_to_vec_string(["g", "h"]),
+                            output: "w".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 nor(0,1):0n}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        }
+                    ],
+                    subcircuits: vec![],
+                    circuit: None,
+                }
+            )),
+            parse_model_helper(
+                r##".model simple2
+.inputs a b
+.inputs c d
+.inputs e f
+.inputs g h
+.outputs x y z w
+.names a b x
+00 1
+10 1
+01 1
+11 1
+.names c d y
+10 0
+10 1
+01 0
+11 0
+.names e f z
+0- 1
+-1 1
+.names g h w
+10 1
+01 1
+11 1
 .end
 "##
             )
