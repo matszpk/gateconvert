@@ -196,8 +196,12 @@ enum BLIFError {
     BadGateTable(String, usize),
     #[error("{0}:{1}: Bad subcircuit mapping")]
     BadSubcircuitMapping(String, usize),
-    #[error("{0}:{1}: Alrady defined as output")]
+    #[error("{0}:{1}: Already defined as output")]
     AlreadyDefinedAsOutput(String, usize),
+    #[error("{0}:{1}: Defined as circuit input")]
+    DefinedAsCircuitInput(String, usize),
+    #[error("{0}:{1}: Defined as circuit clock")]
+    DefinedAsCircuitClock(String, usize),
 }
 
 // structures of BLIF
@@ -334,6 +338,7 @@ fn parse_model<R: Read>(
         circuit: None,
     };
     let mut model_input_set = HashSet::new();
+    let mut model_clock_set = HashSet::new();
     let mut model_output_set = HashSet::new();
     let mut after_model_decls = false;
     let mut all_names = HashSet::new();
@@ -351,7 +356,20 @@ fn parse_model<R: Read>(
                 let mut last_set_value = true;
                 let var_num = line.len() - 2;
 
-                // TODO: check whether output is not in inputs or clocks of model
+                // check whether output is not in inputs of model
+                if model_input_set.contains(line.last().unwrap()) {
+                    return Err(BLIFError::DefinedAsCircuitInput(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
+                // check whether output is not in inputs of model
+                if model_clock_set.contains(line.last().unwrap()) {
+                    return Err(BLIFError::DefinedAsCircuitClock(
+                        filename.to_string(),
+                        line_no,
+                    ));
+                }
                 if !all_outputs.insert(line.last().unwrap().clone()) {
                     // if not already newly inserted
                     return Err(BLIFError::AlreadyDefinedAsOutput(
@@ -442,6 +460,7 @@ fn parse_model<R: Read>(
                     ));
                 }
                 model.clocks.extend(line[1..].iter().cloned());
+                model_clock_set.extend(line[1..].iter().cloned());
                 all_names.extend(line[1..].iter().cloned());
             }
             ".latch" => {
