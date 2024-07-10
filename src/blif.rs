@@ -399,7 +399,9 @@ fn parse_model<R: Read>(
                 pla_table.retain(|(_, cur_set_value, _)| last_set_value == *cur_set_value);
                 pla_table.dedup_by(|(entry1, _, _), (entry2, _, _)| entry1 == entry2);
 
-                let tbl_circuit = if var_num * pla_table.len() < 64 {
+                // use gate cache only if pla_table have 64 literals and
+                // non-zero variables - avoid problem with PLA with same set value.
+                let tbl_circuit = if var_num != 0 && var_num * pla_table.len() < 64 {
                     // create key - to find gate circuit.
                     let gc_key = GateCacheKey::new(var_num, pla_table.as_slice(), last_set_value);
                     // check wether is in gate cache
@@ -628,22 +630,31 @@ c   # ‘\’ here only to demonstrate its use
                 "simple".to_string(),
                 Model {
                     inputs: vec![],
-                    outputs: strs_to_vec_string(["x"]),
+                    outputs: strs_to_vec_string(["x", "y"]),
                     latches: vec![],
                     clocks: vec![],
-                    gates: vec![Gate {
-                        params: vec![],
-                        output: "x".to_string(),
-                        circuit: TableCircuit::Value(false),
-                    }],
+                    gates: vec![
+                        Gate {
+                            params: vec![],
+                            output: "x".to_string(),
+                            circuit: TableCircuit::Value(false),
+                        },
+                        Gate {
+                            params: vec![],
+                            output: "y".to_string(),
+                            circuit: TableCircuit::Value(true),
+                        }
+                    ],
                     subcircuits: vec![],
                     circuit: None,
                 }
             )),
             parse_model_helper(
                 r##".model simple
-.outputs x
+.outputs x y
 .names x
+.names y
+1
 .end
 "##
             )

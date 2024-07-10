@@ -189,7 +189,19 @@ pub(crate) fn pla_entry_from_tokens(
     tokens: &[String],
 ) -> Option<(Vec<PLACell>, bool, usize)> {
     if tokens.len() < 2 {
-        return None;
+        if var_num == 0 {
+            let set_value = match tokens[0].chars().next() {
+                Some('0') => false,
+                Some('1') => true,
+                _ => {
+                    return None;
+                }
+            };
+            println!("Set value: {}", set_value);
+            return Some((vec![], set_value, line_no));
+        } else {
+            return None;
+        }
     }
     if let Some(entry) = tokens[0]
         .chars()
