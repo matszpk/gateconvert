@@ -496,12 +496,12 @@ fn parse_model<R: Read>(
                     ));
                 }
                 model.subcircuits.push(Subcircuit {
-                    model: line[2].clone(),
+                    model: line[1].clone(),
                     mappings: line[2..]
                         .iter()
                         .map(|s| {
                             let (s1, s2) = s.split_at(s.find('=').unwrap());
-                            (s1.to_string(), s2.to_string())
+                            (s1.to_string(), s2[1..].to_string())
                         })
                         .collect::<Vec<_>>(),
                     // data for error handling
@@ -683,7 +683,7 @@ c   # ‘\’ here only to demonstrate its use
                 "simple2".to_string(),
                 Model {
                     inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f", "i"]),
-                    outputs: strs_to_vec_string(["x", "y", "z", "w", "t", "t1"]),
+                    outputs: strs_to_vec_string(["x", "y", "z", "w", "t", "t1", "x1", "z1"]),
                     latches: strs2_to_vec_string([("x", "a"), ("y", "c")]),
                     clocks: strs_to_vec_string(["g", "h"]),
                     gates: vec![
@@ -737,7 +737,17 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
                             )),
                         },
                     ],
-                    subcircuits: vec![],
+                    subcircuits: vec![Subcircuit {
+                        model: "calc0".to_string(),
+                        mappings: strs2_to_vec_string([
+                            ("a", "b"),
+                            ("c", "d"),
+                            ("s", "x1"),
+                            ("s1", "z1")
+                        ]),
+                        filename: "top.blif".to_string(),
+                        line_no: 33,
+                    }],
                     circuit: None,
                 }
             )),
@@ -749,7 +759,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
 .clocks g h
 .inputs i
 .outputs x y z w
-.outputs t t1
+.outputs t t1 x1 z1
 .latch x a
 .latch y c
 .names a b x
@@ -774,6 +784,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
 --1 0
 --1 1
 00- 1
+.subckt calc0 a=b c=d s=x1 s1=z1
 .names h y z c t1
 1-00 1
 -111 1
