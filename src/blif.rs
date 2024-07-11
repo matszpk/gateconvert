@@ -575,6 +575,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     #[derive(Clone)]
     enum InputNode {
         ModelInput(usize),
+        ModelClock(usize),
         Gate(usize, usize),       // gate index, parameter index
         Subcircuit(usize, usize), // subcircuit index, input index
     }
@@ -594,19 +595,33 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         node: Node,
         way: usize,
     }
-    let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Vec<OutputNode>)>::new();
+    let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Option<OutputNode>)>::new();
     for (i, input) in model.inputs.iter().enumerate() {
         if let Some((wi, _)) = wire_in_outs.get_mut(input) {
             wi.push(InputNode::ModelInput(i));
         } else {
-            wire_in_outs.insert(input.clone(), (vec![InputNode::ModelInput(i)], vec![]));
+            wire_in_outs.insert(input.clone(), (vec![InputNode::ModelInput(i)], None));
+        }
+    }
+    for (i, clock) in model.clocks.iter().enumerate() {
+        if let Some((wi, _)) = wire_in_outs.get_mut(clock) {
+            wi.push(InputNode::ModelClock(i));
+        } else {
+            wire_in_outs.insert(clock.clone(), (vec![InputNode::ModelClock(i)], None));
         }
     }
     for (i, output) in model.outputs.iter().enumerate() {
         if let Some((_, wo)) = wire_in_outs.get_mut(output) {
-            wo.push(OutputNode::ModelOutput(i));
+            if wo.is_some() {
+                return Err(BLIFError::AlreadyDefinedAsOutput2(
+                    model_name.clone(),
+                    output.clone(),
+                ));
+            } else {
+                *wo = Some(OutputNode::ModelOutput(i));
+            }
         } else {
-            wire_in_outs.insert(output.clone(), (vec![], vec![OutputNode::ModelOutput(i)]));
+            wire_in_outs.insert(output.clone(), (vec![], Some(OutputNode::ModelOutput(i))));
         }
     }
     // resolve gate inputs and outputs
@@ -615,19 +630,20 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             if let Some((wi, _)) = wire_in_outs.get_mut(gin) {
                 wi.push(InputNode::Gate(i, gini));
             } else {
-                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], vec![]));
+                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], None));
             }
         }
         if let Some((_, wo)) = wire_in_outs.get_mut(&g.output) {
-            if !wo.is_empty() {
+            if wo.is_some() {
                 return Err(BLIFError::AlreadyDefinedAsOutput2(
                     model_name.clone(),
                     g.output.clone(),
                 ));
+            } else {
+                *wo = Some(OutputNode::Gate(i));
             }
-            wo.push(OutputNode::Gate(i));
         } else {
-            wire_in_outs.insert(g.output.clone(), (vec![], vec![OutputNode::Gate(i)]));
+            wire_in_outs.insert(g.output.clone(), (vec![], Some(OutputNode::Gate(i))));
         }
     }
     for (i, sc) in model.subcircuits.iter().enumerate() {
