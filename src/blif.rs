@@ -544,11 +544,13 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
     #[derive(Clone)]
     enum InputNode {
+        ModelInput(usize),
         Gate(usize, usize),       // gate index, parameter index
         Subcircuit(usize, usize), // subcircuit index, input index
     }
     #[derive(Clone)]
     enum OutputNode {
+        ModelOutput(usize),
         Gate(usize),              // gate index
         Subcircuit(usize, usize), // subcircuit index, output index
     }
@@ -562,24 +564,40 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         node: Node,
         way: usize,
     }
-    let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Option<OutputNode>)>::new();
+    let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Vec<OutputNode>)>::new();
+    for (i, input) in model.inputs.iter().enumerate() {
+        if let Some((wi, _)) = wire_in_outs.get_mut(input) {
+            wi.push(InputNode::ModelInput(i));
+        } else {
+            wire_in_outs.insert(input.clone(), (vec![InputNode::ModelInput(i)], vec![]));
+        }
+    }
+    for (i, output) in model.outputs.iter().enumerate() {
+        if let Some((_, wo)) = wire_in_outs.get_mut(output) {
+            wo.push(OutputNode::ModelOutput(i));
+        } else {
+            wire_in_outs.insert(output.clone(), (vec![], vec![OutputNode::ModelOutput(i)]));
+        }
+    }
     // resolve gate inputs and outputs
     for (i, g) in model.gates.iter().enumerate() {
         for (gini, gin) in g.params.iter().enumerate() {
             if let Some((wi, _)) = wire_in_outs.get_mut(gin) {
                 wi.push(InputNode::Gate(i, gini));
             } else {
-                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], None));
+                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], vec![]));
             }
         }
         if let Some((_, wo)) = wire_in_outs.get_mut(&g.output) {
-            if wo.is_some() {
+            if !wo.is_empty() {
                 return Err(BLIFError::AlreadyDefinedAsOutput2(
                     model_name.clone(),
                     g.output.clone(),
                 ));
             }
-            *wo = Some(OutputNode::Gate(i));
+            wo.push(OutputNode::Gate(i));
+        } else {
+            wire_in_outs.insert(g.output.clone(), (vec![], vec![OutputNode::Gate(i)]));
         }
     }
     for (i, sc) in model.subcircuits.iter().enumerate() {
