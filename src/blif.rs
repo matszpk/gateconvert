@@ -200,6 +200,8 @@ enum BLIFError {
     AlreadyDefinedAsOutput(String, usize),
     #[error("{0}:{1}: Model input duplicate")]
     ModelInputDuplicate(String, usize),
+    #[error("{0}:{1}: Model clock duplicate")]
+    ModelClockDuplicate(String, usize),
     #[error("{0}:{1}: Model output duplicate")]
     ModelOutputDuplicate(String, usize),
     #[error("{0}:{1}: Defined as model input")]
@@ -477,6 +479,15 @@ fn parse_model<R: Read>(
                         line_no,
                     ));
                 }
+                for clock in &line[1..] {
+                    if model_clock_set.contains(clock) {
+                        return Err(BLIFError::ModelClockDuplicate(
+                            filename.to_string(),
+                            line_no,
+                        ));
+                    }
+                    model_clock_set.insert(clock.clone());
+                }
                 if line[1..].iter().any(|s| model_input_set.contains(s)) {
                     return Err(BLIFError::ModelInputAndClockBoth(
                         filename.to_string(),
@@ -484,7 +495,6 @@ fn parse_model<R: Read>(
                     ));
                 }
                 model.clocks.extend(line[1..].iter().cloned());
-                model_clock_set.extend(line[1..].iter().cloned());
             }
             ".latch" => {
                 after_model_decls = true;
