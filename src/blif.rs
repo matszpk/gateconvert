@@ -1195,5 +1195,31 @@ x1 1
 "##
             )
         );
+        assert_eq!(
+            Err("top.blif:3: Model input duplicate".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.inputs d
+.outputs x
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Model output duplicate".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.outputs x
+.names c d x
+01 1
+.end
+"##
+            )
+        );
     }
 }
