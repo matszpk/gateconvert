@@ -295,17 +295,6 @@ impl GateCacheKey {
 type GateCache = HashMap<GateCacheKey, TableCircuit>;
 type ModelMap = HashMap<String, Model>;
 
-fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) {
-    let model = model_map.get(&model_name).unwrap();
-    // all subcircuit must be resolved and they must have generated circuits.
-    assert!(model
-        .subcircuits
-        .iter()
-        .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
-}
-
-fn resolve_model(top: String, model_map: &mut ModelMap) {}
-
 fn parse_model<R: Read>(
     filename: &str,
     reader: &mut BLIFTokensReader<R>,
@@ -543,6 +532,17 @@ fn parse_model<R: Read>(
     // next phase will be done while resolving graph of models.
     Ok((model_name, model))
 }
+
+fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) {
+    let model = model_map.get(&model_name).unwrap();
+    // all subcircuit must be resolved and they must have generated circuits.
+    assert!(model
+        .subcircuits
+        .iter()
+        .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
+}
+
+fn resolve_model(top: String, model_map: &mut ModelMap) {}
 
 #[cfg(test)]
 mod tests {
