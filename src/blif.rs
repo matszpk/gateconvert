@@ -647,8 +647,17 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         }
     }
     for (i, sc) in model.subcircuits.iter().enumerate() {
-        // resolve connections
-        // for (scii, sci) in sc.mapping.iter().enumerate() {}
+        if let Some(subc_model) = model_map.get(&sc.model) {
+            for (scii, (model_wire, wire)) in sc.mappings.iter().enumerate() {}
+            // resolve connections
+            // for (scii, sci) in sc.mapping.iter().enumerate() {}
+        } else {
+            return Err(BLIFError::UnknownModel(
+                sc.filename.clone(),
+                sc.line_no,
+                sc.model.clone(),
+            ));
+        }
     }
     Ok(())
 }
