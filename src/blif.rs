@@ -198,6 +198,10 @@ enum BLIFError {
     BadSubcircuitMapping(String, usize),
     #[error("{0}:{1}: Already defined as output")]
     AlreadyDefinedAsOutput(String, usize),
+    #[error("{0}:{1}: Model input duplicate")]
+    ModelInputDuplicate(String, usize),
+    #[error("{0}:{1}: Model output duplicate")]
+    ModelOutputDuplicate(String, usize),
     #[error("{0}:{1}: Defined as model input")]
     DefinedAsModelInput(String, usize),
     #[error("{0}:{1}: Defined as model clock")]
@@ -437,8 +441,16 @@ fn parse_model<R: Read>(
                         line_no,
                     ));
                 }
+                for input in &line[1..] {
+                    if model_input_set.contains(input) {
+                        return Err(BLIFError::ModelInputDuplicate(
+                            filename.to_string(),
+                            line_no,
+                        ));
+                    }
+                    model_input_set.insert(input.clone());
+                }
                 model.inputs.extend(line[1..].iter().cloned());
-                model_input_set.extend(line[1..].iter().cloned());
             }
             ".output" | ".outputs" => {
                 if after_model_decls {
@@ -447,8 +459,16 @@ fn parse_model<R: Read>(
                         line_no,
                     ));
                 }
+                for output in &line[1..] {
+                    if model_output_set.contains(output) {
+                        return Err(BLIFError::ModelOutputDuplicate(
+                            filename.to_string(),
+                            line_no,
+                        ));
+                    }
+                    model_output_set.insert(output.clone());
+                }
                 model.outputs.extend(line[1..].iter().cloned());
-                model_output_set.extend(line[1..].iter().cloned());
             }
             ".clock" => {
                 if after_model_decls {
