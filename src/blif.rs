@@ -344,7 +344,6 @@ fn parse_model<R: Read>(
     let mut model_clock_set = HashSet::new();
     let mut model_output_set = HashSet::new();
     let mut after_model_decls = false;
-    let mut all_names = HashSet::new();
     let mut all_outputs = HashSet::new();
     while let Some((line_no, line)) = reader.read_tokens()? {
         match line[0].as_str() {
@@ -354,7 +353,6 @@ fn parse_model<R: Read>(
                 if line.len() < 2 {
                     return Err(BLIFError::TooFewParameters(filename.to_string(), line_no));
                 }
-                all_names.extend(line[1..].iter().cloned());
                 let mut pla_table = vec![];
                 let mut last_set_value = true;
                 let var_num = line.len() - 2;
@@ -450,7 +448,6 @@ fn parse_model<R: Read>(
                 }
                 model.inputs.extend(line[1..].iter().cloned());
                 model_input_set.extend(line[1..].iter().cloned());
-                all_names.extend(line[1..].iter().cloned());
             }
             ".output" | ".outputs" => {
                 if after_model_decls {
@@ -461,7 +458,6 @@ fn parse_model<R: Read>(
                 }
                 model.outputs.extend(line[1..].iter().cloned());
                 model_output_set.extend(line[1..].iter().cloned());
-                all_names.extend(line[1..].iter().cloned());
             }
             ".clock" => {
                 if after_model_decls {
@@ -478,7 +474,6 @@ fn parse_model<R: Read>(
                 }
                 model.clocks.extend(line[1..].iter().cloned());
                 model_clock_set.extend(line[1..].iter().cloned());
-                all_names.extend(line[1..].iter().cloned());
             }
             ".latch" => {
                 after_model_decls = true;
