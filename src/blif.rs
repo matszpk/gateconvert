@@ -194,24 +194,24 @@ enum BLIFError {
     UnsupportedGate(String, usize),
     #[error("{0}:{1}: Bad gate PLA table")]
     BadGateTable(String, usize),
-    #[error("{0}:{1}: Bad subcircuit mapping")]
-    BadSubcircuitMapping(String, usize),
-    #[error("{0}:{1}: Already defined as output")]
-    AlreadyDefinedAsOutput(String, usize),
-    #[error("{0}:{1}: Model input duplicate")]
-    ModelInputDuplicate(String, usize),
-    #[error("{0}:{1}: Model clock duplicate")]
-    ModelClockDuplicate(String, usize),
-    #[error("{0}:{1}: Model output duplicate")]
-    ModelOutputDuplicate(String, usize),
-    #[error("{0}:{1}: Defined as model input")]
-    DefinedAsModelInput(String, usize),
-    #[error("{0}:{1}: Defined as model clock")]
-    DefinedAsModelClock(String, usize),
-    #[error("{0}:{1}: Model input defined as input and clock")]
-    ModelInputAndClockBoth(String, usize),
-    #[error("{0}:{1}: Wire is undefined")]
-    UndefinedWire(String, usize),
+    #[error("{0}:{1}: Bad subcircuit {2} mapping")]
+    BadSubcircuitMapping(String, usize, String),
+    #[error("{0}:{1}: Already defined as output {2}")]
+    AlreadyDefinedAsOutput(String, usize, String),
+    #[error("{0}:{1}: Model input duplicate {2}")]
+    ModelInputDuplicate(String, usize, String),
+    #[error("{0}:{1}: Model clock duplicate {2}")]
+    ModelClockDuplicate(String, usize, String),
+    #[error("{0}:{1}: Model output duplicate {2}")]
+    ModelOutputDuplicate(String, usize, String),
+    #[error("{0}:{1}: Defined as model input {2}")]
+    DefinedAsModelInput(String, usize, String),
+    #[error("{0}:{1}: Defined as model clock {2}")]
+    DefinedAsModelClock(String, usize, String),
+    #[error("{0}:{1}: Model input defined as input and clock {2}")]
+    ModelInputAndClockBoth(String, usize, String),
+    #[error("{0}:{1}: Wire {2} is undefined")]
+    UndefinedWire(String, usize, String),
     #[error("Already defined as output in {0}:{1}")]
     AlreadyDefinedAsOutput2(String, String),
 }
@@ -359,6 +359,7 @@ fn parse_model<R: Read>(
                     return Err(BLIFError::DefinedAsModelInput(
                         filename.to_string(),
                         line_no,
+                        line.last().unwrap().clone(),
                     ));
                 }
                 // check whether output is not in inputs of model
@@ -366,6 +367,7 @@ fn parse_model<R: Read>(
                     return Err(BLIFError::DefinedAsModelClock(
                         filename.to_string(),
                         line_no,
+                        line.last().unwrap().clone(),
                     ));
                 }
                 if !all_outputs.insert(line.last().unwrap().clone()) {
@@ -373,6 +375,7 @@ fn parse_model<R: Read>(
                     return Err(BLIFError::AlreadyDefinedAsOutput(
                         filename.to_string(),
                         line_no,
+                        line.last().unwrap().clone(),
                     ));
                 }
 
@@ -437,17 +440,21 @@ fn parse_model<R: Read>(
                         line_no,
                     ));
                 }
-                if line[1..].iter().any(|s| model_clock_set.contains(s)) {
-                    return Err(BLIFError::ModelInputAndClockBoth(
-                        filename.to_string(),
-                        line_no,
-                    ));
+                for input in &line[1..] {
+                    if model_clock_set.contains(input) {
+                        return Err(BLIFError::ModelInputAndClockBoth(
+                            filename.to_string(),
+                            line_no,
+                            input.clone(),
+                        ));
+                    }
                 }
                 for input in &line[1..] {
                     if model_input_set.contains(input) {
                         return Err(BLIFError::ModelInputDuplicate(
                             filename.to_string(),
                             line_no,
+                            input.clone(),
                         ));
                     }
                     model_input_set.insert(input.clone());
@@ -466,6 +473,7 @@ fn parse_model<R: Read>(
                         return Err(BLIFError::ModelOutputDuplicate(
                             filename.to_string(),
                             line_no,
+                            output.clone(),
                         ));
                     }
                     model_output_set.insert(output.clone());
@@ -484,15 +492,19 @@ fn parse_model<R: Read>(
                         return Err(BLIFError::ModelClockDuplicate(
                             filename.to_string(),
                             line_no,
+                            clock.clone(),
                         ));
                     }
                     model_clock_set.insert(clock.clone());
                 }
-                if line[1..].iter().any(|s| model_input_set.contains(s)) {
-                    return Err(BLIFError::ModelInputAndClockBoth(
-                        filename.to_string(),
-                        line_no,
-                    ));
+                for clock in &line[1..] {
+                    if model_input_set.contains(clock) {
+                        return Err(BLIFError::ModelInputAndClockBoth(
+                            filename.to_string(),
+                            line_no,
+                            clock.clone(),
+                        ));
+                    }
                 }
                 model.clocks.extend(line[1..].iter().cloned());
             }
@@ -524,6 +536,7 @@ fn parse_model<R: Read>(
                     return Err(BLIFError::BadSubcircuitMapping(
                         filename.to_string(),
                         line_no,
+                        line[1].clone(),
                     ));
                 }
                 model.subcircuits.push(Subcircuit {
@@ -991,7 +1004,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
             )
         );
         assert_eq!(
-            Err("top.blif:3: Model input defined as input and clock".to_string()),
+            Err("top.blif:3: Model input defined as input and clock a".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b
@@ -1004,7 +1017,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
             )
         );
         assert_eq!(
-            Err("top.blif:3: Model input defined as input and clock".to_string()),
+            Err("top.blif:3: Model input defined as input and clock a".to_string()),
             parse_model_helper(
                 r##".model test1
 .clock a
@@ -1129,7 +1142,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:4: Defined as model input".to_string()),
+            Err("top.blif:4: Defined as model input b".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b
@@ -1141,7 +1154,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:5: Defined as model clock".to_string()),
+            Err("top.blif:5: Defined as model clock b".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a
@@ -1154,7 +1167,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:6: Already defined as output".to_string()),
+            Err("top.blif:6: Already defined as output x".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b c d
@@ -1195,7 +1208,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:4: Bad subcircuit mapping".to_string()),
+            Err("top.blif:4: Bad subcircuit complex1 mapping".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b c d
@@ -1208,7 +1221,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:4: Bad subcircuit mapping".to_string()),
+            Err("top.blif:4: Bad subcircuit complex1 mapping".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b c d
@@ -1221,7 +1234,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:3: Model input duplicate".to_string()),
+            Err("top.blif:3: Model input duplicate d".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b c d
@@ -1234,7 +1247,7 @@ x1 1
             )
         );
         assert_eq!(
-            Err("top.blif:4: Model output duplicate".to_string()),
+            Err("top.blif:4: Model output duplicate x".to_string()),
             parse_model_helper(
                 r##".model test1
 .inputs a b c d
