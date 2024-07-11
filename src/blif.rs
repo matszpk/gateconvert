@@ -204,6 +204,8 @@ enum BLIFError {
     DefinedAsModelClock(String, usize),
     #[error("{0}:{1}: Model input defined as input and clock")]
     ModelInputAndClockBoth(String, usize),
+    #[error("{0}:{1}: Wire is undefined")]
+    UndefinedWire(String, usize),
 }
 
 // structures of BLIF
