@@ -178,7 +178,7 @@ enum BLIFError {
     ModelDeclsInCommands(String, usize),
     #[error("{0}:{1}: Name {2} of model already used")]
     ModelNameUsed(String, usize, String),
-    #[error("{0}:{1}: Model with name {2} is undefned")]
+    #[error("{0}:{1}: Model with name {2} is undefined")]
     UnknownModel(String, usize, String),
     #[error("{0}:{1}: Parameters to model {2} doesn't match")]
     ModelParamMatch(String, usize, String),
@@ -206,6 +206,8 @@ enum BLIFError {
     ModelInputAndClockBoth(String, usize),
     #[error("{0}:{1}: Wire is undefined")]
     UndefinedWire(String, usize),
+    #[error("Already defined as output in {0}:{1}")]
+    AlreadyDefinedAsOutput2(String, String),
 }
 
 // structures of BLIF
@@ -533,13 +535,58 @@ fn parse_model<R: Read>(
     Ok((model_name, model))
 }
 
-fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) {
+fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(), BLIFError> {
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
         .subcircuits
         .iter()
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
+    #[derive(Clone)]
+    enum InputNode {
+        Gate(usize, usize),       // gate index, parameter index
+        Subcircuit(usize, usize), // subcircuit index, input index
+    }
+    #[derive(Clone)]
+    enum OutputNode {
+        Gate(usize),              // gate index
+        Subcircuit(usize, usize), // subcircuit index, output index
+    }
+    #[derive(Clone)]
+    enum Node {
+        Gate(usize),
+        Subcircuit(usize),
+    }
+    #[derive(Clone)]
+    struct StackEntry {
+        node: Node,
+        way: usize,
+    }
+    let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Option<OutputNode>)>::new();
+    // resolve gate inputs and outputs
+    for (i, g) in model.gates.iter().enumerate() {
+        for (gini, gin) in g.params.iter().enumerate() {
+            if let Some((wi, _)) = wire_in_outs.get_mut(gin) {
+                wi.push(InputNode::Gate(i, gini));
+            } else {
+                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], None));
+            }
+        }
+        if let Some((_, wo)) = wire_in_outs.get_mut(&g.output) {
+            if wo.is_some() {
+                return Err(BLIFError::AlreadyDefinedAsOutput2(
+                    model_name.clone(),
+                    g.output.clone(),
+                ));
+            }
+            *wo = Some(OutputNode::Gate(i));
+        }
+    }
+    for (i, sc) in model.subcircuits.iter().enumerate() {
+        // resolve connections
+        // for (scii, sci) in sc.mapping.iter().enumerate() {}
+    }
+    Ok(())
 }
 
 fn resolve_model(top: String, model_map: &mut ModelMap) {}
