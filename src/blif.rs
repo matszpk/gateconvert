@@ -939,6 +939,19 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
             )
         );
         assert_eq!(
+            Err("top.blif:4: Too few parameters".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b
+.outputs x
+.latch x
+.names a b x
+11 1
+.end
+"##
+            )
+        );
+        assert_eq!(
             Err("top.blif:5: Bad gate PLA table".to_string()),
             parse_model_helper(
                 r##".model test1
@@ -1031,6 +1044,59 @@ x1 1
 .outputs x
 .names a b x
 10 1
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Too few parameters".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.names
+10 1
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Too few parameters".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.subckt
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Bad subcircuit mapping".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.subckt complex1 a=c b = a
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Bad subcircuit mapping".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.subckt complex1 a=c =b
 .names c d x
 01 1
 .end
