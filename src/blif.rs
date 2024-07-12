@@ -676,7 +676,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         }
     }
 
-    let sc_mappings = Vec::<SubcircuitMapping>::new();
+    let mut sc_mappings = Vec::<SubcircuitMapping>::new();
     for (i, sc) in model.subcircuits.iter().enumerate() {
         if let Some(subc_model) = model_map.get(&sc.model) {
             let sc_input_map = HashMap::<String, usize>::from_iter(
@@ -764,6 +764,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     }
                 }
             }
+            sc_mappings.push(sc_mapping);
         } else {
             return Err(BLIFError::UnknownModel(
                 sc.filename.clone(),
