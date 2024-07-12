@@ -838,7 +838,32 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                 boolvar_map.insert(name.clone(), BoolVarSys::var());
                             }
                         }
-                        _ => (),
+                        Node::ModelOutput(_) => (),
+                        Node::Gate(j) => {
+                            if !boolvar_map.contains_key(&name) {
+                                let gate = &model.gates[j];
+                                // gate.circuit();
+                                // resolve gate params (inputs)
+                                let expr = match &gate.circuit {
+                                    TableCircuit::Value(v) => BoolVarSys::from(*v),
+                                    TableCircuit::Circuit((circuit, input_map)) => {
+                                        BoolVarSys::from_circuit(
+                                            circuit.clone(),
+                                            input_map.iter().enumerate().filter_map(|(idx, p)| {
+                                                if p.is_some() {
+                                                    Some(boolvar_map[&gate.params[idx]].clone())
+                                                } else {
+                                                    None
+                                                }
+                                            }),
+                                        )[0]
+                                        .clone()
+                                    }
+                                };
+                                boolvar_map.insert(name.clone(), expr);
+                            }
+                        }
+                        Node::Subcircuit(j, k) => if !boolvar_map.contains_key(&name) {},
                     };
                     stack.pop();
                 }
