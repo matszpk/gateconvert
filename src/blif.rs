@@ -676,10 +676,36 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         }
     }
 
-    //let sc_mappings = vec![];
+    let sc_mappings = Vec::<SubcircuitMapping>::new();
     for (i, sc) in model.subcircuits.iter().enumerate() {
         if let Some(subc_model) = model_map.get(&sc.model) {
-            for (scii, (model_wire, wire)) in sc.mappings.iter().enumerate() {}
+            let sc_input_map = HashMap::<String, usize>::from_iter(
+                subc_model
+                    .inputs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| (x.clone(), i)),
+            );
+            let sc_output_map = HashMap::<String, usize>::from_iter(
+                subc_model
+                    .outputs
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| (x.clone(), i)),
+            );
+            let mut sc_mapping = SubcircuitMapping {
+                inputs: vec![None; subc_model.inputs.len()],
+                outputs: vec![None; subc_model.outputs.len()],
+            };
+            for (model_wire, wire) in &sc.mappings {
+                if let Some(input_index) = sc_input_map.get(model_wire) {
+                    sc_mapping.inputs[*input_index] = Some(wire.clone());
+                }
+                if let Some(output_index) = sc_output_map.get(model_wire) {
+                    sc_mapping.outputs[*output_index] = Some(wire.clone());
+                }
+            }
+            // checking sc mapping
             // resolve connections
             // for (scii, sci) in sc.mapping.iter().enumerate() {}
         } else {
