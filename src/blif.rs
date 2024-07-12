@@ -214,8 +214,8 @@ enum BLIFError {
     DefinedAsModelClock(String, usize, String),
     #[error("{0}:{1}: Model input defined as input and clock {2}")]
     ModelInputAndClockBoth(String, usize, String),
-    #[error("{0}:{1}: Wire {2} is undefined")]
-    UndefinedWire(String, usize, String),
+    #[error("Wire {1} in model {0} is undefined")]
+    UndefinedWire(String, String),
     #[error("Already defined as output in {0}:{1}")]
     AlreadyDefinedAsOutput2(String, String),
     #[error("{0}:{1}: Model have latches")]
@@ -622,7 +622,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     }
     #[derive(Clone)]
     enum OutputNode {
-        ModelOutput(usize),
         Gate(usize),              // gate index
         Subcircuit(usize, usize), // subcircuit index, output index
     }
@@ -658,20 +657,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             wi.push(InputNode::ModelClock(i));
         } else {
             wire_in_outs.insert(clock.clone(), (vec![InputNode::ModelClock(i)], None));
-        }
-    }
-    for (i, output) in model.outputs.iter().enumerate() {
-        if let Some((_, wo)) = wire_in_outs.get_mut(output) {
-            if wo.is_some() {
-                return Err(BLIFError::AlreadyDefinedAsOutput2(
-                    model_name.clone(),
-                    output.clone(),
-                ));
-            } else {
-                *wo = Some(OutputNode::ModelOutput(i));
-            }
-        } else {
-            wire_in_outs.insert(output.clone(), (vec![], Some(OutputNode::ModelOutput(i))));
         }
     }
     // resolve gate inputs and outputs
@@ -826,10 +811,30 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         let mut path_visited = HashSet::<String>::new();
         let mut stack = vec![];
         for (i, outname) in model.outputs.iter().enumerate() {
-            stack.push(StackEntry {
-                node: Node::ModelOutput(i),
-                way: 0,
-            });
+            if let Some((wi, wo)) = wire_in_outs.get(outname) {
+                let node = if let Some(wo) = wo {
+                    match wo {
+                        OutputNode::Gate(g) => Node::Gate(*g),
+                        OutputNode::Subcircuit(sc, sco) => Node::Subcircuit(*sc, *sco),
+                    }
+                } else if !wi.is_empty() {
+                    match wi.first().unwrap() {
+                        InputNode::ModelInput(mi) => Node::ModelInput(*mi),
+                        InputNode::ModelClock(mi) => Node::ModelClock(*mi),
+                        _ => {
+                            panic!("Unexpected!");
+                        }
+                    }
+                } else {
+                    panic!("Unexpected!");
+                };
+                stack.push(StackEntry { node, way: 0 });
+            } else {
+                return Err(BLIFError::UndefinedWire(
+                    model_name.clone(),
+                    outname.clone(),
+                ));
+            };
 
             while !stack.is_empty() {
                 let top = stack.last().unwrap();
@@ -944,8 +949,8 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
             }
         }
-    });
-    Ok(())
+        Ok(())
+    })
 }
 
 fn resolve_model(top: String, model_map: &mut ModelMap) {}
