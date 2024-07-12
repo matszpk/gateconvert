@@ -249,14 +249,10 @@ struct Subcircuit {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum CircuitMapping {
     NoMapping,
-    // value, output index
-    Value(bool, usize),
-    // wire name, input index
-    Input(usize, bool),
-    // wire name, output index
-    Output(usize, bool),
-    // wire name, subcircuit index, clock_index
-    Clock(usize, usize),
+    Value(bool),  // value
+    Input(bool),  // if state
+    Output(bool), // if state
+    Clock,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -691,7 +687,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             if subc_model.circuit.as_ref().unwrap().1.iter().any(|c| {
                 matches!(
                     c,
-                    CircuitMapping::Input(_, true) | CircuitMapping::Output(_, true)
+                    CircuitMapping::Input(true) | CircuitMapping::Output(true)
                 )
             }) {
                 return Err(BLIFError::ModelHaveLatches(
@@ -705,7 +701,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 .unwrap()
                 .1
                 .iter()
-                .any(|c| matches!(c, CircuitMapping::Clock(_, _)))
+                .any(|c| matches!(c, CircuitMapping::Clock))
             {
                 return Err(BLIFError::ModelHaveClocks(
                     sc.filename.to_string(),
@@ -808,7 +804,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     }
 
     // creating circuit
-    callsys(|| {
+    let (circuit, circuit_mapping) = callsys(|| {
         let mut boolvar_map = HashMap::<String, BoolVarSys>::new();
         let mut visited = HashSet::<String>::new();
         let mut path_visited = HashSet::<String>::new();
@@ -959,7 +955,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                 let circuit_mapping = &subc_model.circuit.as_ref().unwrap().1;
                                 let output_count = circuit_mapping
                                     .iter()
-                                    .filter(|c| matches!(c, CircuitMapping::Output(_, _)))
+                                    .filter(|c| matches!(c, CircuitMapping::Output(_)))
                                     .count();
                                 let total_input_len = model.inputs.len();
                                 let circ_outputs = BoolVarSys::from_circuit(
@@ -970,8 +966,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                         .filter_map(|(idx, p)| {
                                             if matches!(
                                                 p,
-                                                CircuitMapping::Input(_, _)
-                                                    | CircuitMapping::Clock(_, _)
+                                                CircuitMapping::Input(_) | CircuitMapping::Clock
                                             ) {
                                                 if let Some(scmap_name) = &sc_mapping.inputs[idx] {
                                                     Some(boolvar_map[scmap_name].clone())
@@ -983,19 +978,22 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                             }
                                         }),
                                 );
+                                let mut out_count = 0;
                                 for (i, c) in circuit_mapping[total_input_len..].iter().enumerate()
                                 {
                                     match c {
-                                        CircuitMapping::Value(v, _) => {
+                                        CircuitMapping::Value(v) => {
                                             boolvar_map.insert(
                                                 model.outputs[i].clone(),
                                                 BoolVarSys::from(*v),
                                             );
                                         }
-                                        CircuitMapping::Output(ci, _) => {
+                                        CircuitMapping::Output(ci) => {
+                                            let old_out_count = out_count;
+                                            out_count += 1;
                                             boolvar_map.insert(
                                                 model.outputs[i].clone(),
-                                                circ_outputs[*ci].clone(),
+                                                circ_outputs[old_out_count].clone(),
                                             );
                                         }
                                         _ => (),
@@ -1009,8 +1007,61 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
             }
         }
-        Ok(())
-    })
+        // generate circuit
+        let latch_inputs =
+            HashSet::<String>::from_iter(model.latches.iter().map(|(s, _)| s.clone()));
+        let latch_outputs =
+            HashSet::<String>::from_iter(model.latches.iter().map(|(_, s)| s.clone()));
+        let outputs = UDynVarSys::from_iter(model.outputs.iter().map(|s| boolvar_map[s].clone()));
+        let (circuit, input_map) = outputs.to_translated_circuit_with_map(
+            model
+                .inputs
+                .iter()
+                .filter_map(|s| boolvar_map.get(s).cloned())
+                .chain(
+                    model
+                        .clocks
+                        .iter()
+                        .filter_map(|s| boolvar_map.get(s).cloned()),
+                ),
+        );
+        let circuit_out_mapping = model
+            .outputs
+            .iter()
+            .map(|s| {
+                let b = boolvar_map[s].clone();
+                if let Some(v) = b.value() {
+                    CircuitMapping::Value(v)
+                } else {
+                    CircuitMapping::Output(latch_inputs.contains(s))
+                }
+            })
+            .collect::<Vec<_>>();
+        let circuit_mapping = model
+            .inputs
+            .iter()
+            .zip(input_map.iter())
+            .map(|(x, opti)| {
+                if let Some(new_index) = opti {
+                    CircuitMapping::Input(latch_outputs.contains(x))
+                } else {
+                    CircuitMapping::NoMapping
+                }
+            })
+            .chain(model.clocks.iter().zip(input_map.iter()).map(|(x, opti)| {
+                if let Some(new_index) = opti {
+                    CircuitMapping::Clock
+                } else {
+                    CircuitMapping::NoMapping
+                }
+            }))
+            .chain(circuit_out_mapping.into_iter())
+            .collect::<Vec<_>>();
+        Ok((circuit, circuit_mapping))
+    })?;
+    let model = model_map.get_mut(&model_name).unwrap();
+    model.circuit = Some((circuit, circuit_mapping));
+    Ok(())
 }
 
 fn resolve_model(top: String, model_map: &mut ModelMap) {}
