@@ -1,4 +1,6 @@
 use crate::AssignEntry;
+use gategen::boolvar::*;
+use gategen::dynintvar::*;
 use gatesim::*;
 
 use crate::blif_pla::*;
@@ -622,8 +624,12 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     }
     #[derive(Clone)]
     enum Node {
+        ModelInput(usize),
+        ModelClock(usize),
+        ModelOutput(usize),
         Gate(usize),
         Subcircuit(usize),
+        Zero,
     }
     #[derive(Clone)]
     struct SubcircuitMapping {
@@ -784,6 +790,40 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             ));
         }
     }
+
+    // creating circuit
+    callsys(|| {
+        let boolvar_map = HashMap::<String, BoolVarSys>::new();
+        let visited = HashSet::<String>::new();
+        let path_visited = HashSet::<String>::new();
+        let mut stack = vec![];
+        for (i, outname) in model.outputs.iter().enumerate() {
+            stack.push(StackEntry {
+                node: Node::ModelOutput(i),
+                way: 0,
+            });
+
+            while !stack.is_empty() {
+                let top = stack.last().unwrap();
+                let way = top.way;
+                let way_num = match top.node {
+                    Node::Zero
+                    | Node::ModelInput(_)
+                    | Node::ModelClock(_)
+                    | Node::ModelOutput(_) => 1,
+                    Node::Gate(j) => model.gates[j].params.len(),
+                    Node::Subcircuit(j) => sc_mappings[j].outputs.len(),
+                };
+                if way < way_num {
+                    if way == 0 {
+                    } else {
+                    }
+                } else {
+                    stack.pop();
+                }
+            }
+        }
+    });
     Ok(())
 }
 
