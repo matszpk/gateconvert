@@ -196,6 +196,8 @@ enum BLIFError {
     BadGateTable(String, usize),
     #[error("{0}:{1}: Bad subcircuit {2} mapping")]
     BadSubcircuitMapping(String, usize, String),
+    #[error("{0}:{1}: Duplicate {3} in subcircuit {2} mapping")]
+    DuplicateInSubcircuitMapping(String, usize, String, String),
     #[error("{0}:{1}: Already defined as output {2}")]
     AlreadyDefinedAsOutput(String, usize, String),
     #[error("{0}:{1}: Model input duplicate {2}")]
@@ -539,15 +541,24 @@ fn parse_model<R: Read>(
                         line[1].clone(),
                     ));
                 }
+                let mut sc_wire_set = HashSet::new();
+                let mut mappings = vec![];
+                for s in &line[2..] {
+                    let (s1, s2) = s.split_at(s.find('=').unwrap());
+                    if !sc_wire_set.insert(s1) {
+                        return Err(BLIFError::DuplicateInSubcircuitMapping(
+                            filename.to_string(),
+                            line_no,
+                            line[1].clone(),
+                            s1.to_string(),
+                        ));
+                    }
+                    mappings.push((s1.to_string(), s2[1..].to_string()));
+                }
+
                 model.subcircuits.push(Subcircuit {
                     model: line[1].clone(),
-                    mappings: line[2..]
-                        .iter()
-                        .map(|s| {
-                            let (s1, s2) = s.split_at(s.find('=').unwrap());
-                            (s1.to_string(), s2[1..].to_string())
-                        })
-                        .collect::<Vec<_>>(),
+                    mappings,
                     // data for error handling
                     filename: filename.to_string(),
                     line_no,
@@ -602,6 +613,11 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     enum Node {
         Gate(usize),
         Subcircuit(usize),
+    }
+    #[derive(Clone)]
+    struct SubcircuitMapping {
+        inputs: Vec<Option<String>>,
+        outputs: Vec<Option<String>>,
     }
     #[derive(Clone)]
     struct StackEntry {
@@ -659,6 +675,8 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             wire_in_outs.insert(g.output.clone(), (vec![], Some(OutputNode::Gate(i))));
         }
     }
+
+    //let sc_mappings = vec![];
     for (i, sc) in model.subcircuits.iter().enumerate() {
         if let Some(subc_model) = model_map.get(&sc.model) {
             for (scii, (model_wire, wire)) in sc.mappings.iter().enumerate() {}
@@ -1227,6 +1245,19 @@ x1 1
 .inputs a b c d
 .outputs x
 .subckt complex1 a=c =b
+.names c d x
+01 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Duplicate a in subcircuit complex1 mapping".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b c d
+.outputs x
+.subckt complex1 a=c a=b
 .names c d x
 01 1
 .end
