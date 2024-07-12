@@ -218,6 +218,8 @@ enum BLIFError {
     UndefinedWire(String, usize, String),
     #[error("Already defined as output in {0}:{1}")]
     AlreadyDefinedAsOutput2(String, String),
+    #[error("{0}:{1}: Model have latches")]
+    ModelHaveLatches(String, usize),
 }
 
 // structures of BLIF
@@ -698,6 +700,17 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     let mut sc_mappings = Vec::<SubcircuitMapping>::new();
     for (i, sc) in model.subcircuits.iter().enumerate() {
         if let Some(subc_model) = model_map.get(&sc.model) {
+            if subc_model.circuit.as_ref().unwrap().1.iter().any(|c| {
+                matches!(
+                    c,
+                    CircuitMapping::Input(_, true) | CircuitMapping::Output(_, true)
+                )
+            }) {
+                return Err(BLIFError::ModelHaveLatches(
+                    sc.filename.to_string(),
+                    sc.line_no,
+                ));
+            }
             let sc_input_map = HashMap::<String, usize>::from_iter(
                 subc_model
                     .inputs
