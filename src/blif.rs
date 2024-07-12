@@ -628,7 +628,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         ModelClock(usize),
         ModelOutput(usize),
         Gate(usize),
-        Subcircuit(usize),
+        Subcircuit(usize, usize),
         Zero,
     }
     #[derive(Clone)]
@@ -793,9 +793,9 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
 
     // creating circuit
     callsys(|| {
-        let boolvar_map = HashMap::<String, BoolVarSys>::new();
-        let visited = HashSet::<String>::new();
-        let path_visited = HashSet::<String>::new();
+        let mut boolvar_map = HashMap::<String, BoolVarSys>::new();
+        let mut visited = HashSet::<String>::new();
+        let mut path_visited = HashSet::<String>::new();
         let mut stack = vec![];
         for (i, outname) in model.outputs.iter().enumerate() {
             stack.push(StackEntry {
@@ -810,15 +810,36 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     Node::Zero
                     | Node::ModelInput(_)
                     | Node::ModelClock(_)
-                    | Node::ModelOutput(_) => 1,
+                    | Node::ModelOutput(_) => 0,
                     Node::Gate(j) => model.gates[j].params.len(),
-                    Node::Subcircuit(j) => sc_mappings[j].outputs.len(),
+                    Node::Subcircuit(j, _) => sc_mappings[j].outputs.len(),
+                };
+                let name = match top.node {
+                    Node::Zero => String::new(),
+                    Node::ModelInput(j) => model.inputs[j].clone(),
+                    Node::ModelOutput(j) => model.outputs[j].clone(),
+                    Node::ModelClock(j) => model.clocks[j].clone(),
+                    Node::Gate(j) => model.gates[j].output.clone(),
+                    Node::Subcircuit(j, k) => {
+                        sc_mappings[j].outputs[k].clone().unwrap_or(String::new())
+                    }
                 };
                 if way < way_num {
                     if way == 0 {
                     } else {
                     }
                 } else {
+                    match top.node {
+                        Node::Zero => {
+                            boolvar_map.insert(name.clone(), BoolVarSys::from(false));
+                        }
+                        Node::ModelInput(_) | Node::ModelClock(_) => {
+                            if !boolvar_map.contains_key(&name) {
+                                boolvar_map.insert(name.clone(), BoolVarSys::var());
+                            }
+                        }
+                        _ => (),
+                    };
                     stack.pop();
                 }
             }
