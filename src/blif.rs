@@ -734,8 +734,36 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     }
                 }
             }
-            // resolve connections
-            // for (scii, sci) in sc.mapping.iter().enumerate() {}
+            // register connections
+            for (scini, scin) in sc_mapping.inputs.iter().enumerate() {
+                if let Some(scin) = scin.as_ref() {
+                    if let Some((wi, _)) = wire_in_outs.get_mut(scin) {
+                        wi.push(InputNode::Subcircuit(i, scini));
+                    } else {
+                        wire_in_outs
+                            .insert(scin.clone(), (vec![InputNode::Subcircuit(i, scini)], None));
+                    }
+                }
+            }
+            for (scouti, scout) in sc_mapping.outputs.iter().enumerate() {
+                if let Some(scout) = scout.as_ref() {
+                    if let Some((_, wo)) = wire_in_outs.get_mut(scout) {
+                        if wo.is_some() {
+                            return Err(BLIFError::AlreadyDefinedAsOutput2(
+                                model_name.clone(),
+                                scout.clone(),
+                            ));
+                        } else {
+                            *wo = Some(OutputNode::Subcircuit(i, scouti));
+                        }
+                    } else {
+                        wire_in_outs.insert(
+                            scout.clone(),
+                            (vec![], Some(OutputNode::Subcircuit(i, scouti))),
+                        );
+                    }
+                }
+            }
         } else {
             return Err(BLIFError::UnknownModel(
                 sc.filename.clone(),
