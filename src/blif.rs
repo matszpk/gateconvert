@@ -240,10 +240,16 @@ struct Subcircuit {
 // if values >= circuit.input_len then is circuit output index: value - circuit.input_len.
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum CircuitMapping {
-    Input(usize),
-    Output(usize),
-    Latch(usize, usize),
-    Clock(usize),
+    // wire name, input index
+    Input(String, usize),
+    // wire name, output index
+    Output(String, usize),
+    // wire name, output index
+    LatchInput(String, usize),
+    // wire name, output index
+    LatchOutput(String, usize),
+    // wire name, subcircuit index, clock_index
+    Clock(String, usize, usize),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -258,7 +264,7 @@ struct Model {
     // first element - table circuit - same circuit,
     // second element - circuit mapping: in form:
     //     value - (name of model, name of wire, mapping to circuit)
-    circuit: Option<(TableCircuit, Vec<(String, String, CircuitMapping)>)>,
+    circuit: Option<(TableCircuit, Vec<CircuitMapping>)>,
 }
 
 #[derive(Clone, Debug)]
