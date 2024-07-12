@@ -1012,6 +1012,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             HashSet::<String>::from_iter(model.latches.iter().map(|(s, _)| s.clone()));
         let latch_outputs =
             HashSet::<String>::from_iter(model.latches.iter().map(|(_, s)| s.clone()));
+        // TODO: add ordering latches as last in input and output
         let outputs = UDynVarSys::from_iter(model.outputs.iter().map(|s| boolvar_map[s].clone()));
         let (circuit, input_map) = outputs.to_translated_circuit_with_map(
             model
