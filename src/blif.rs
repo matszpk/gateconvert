@@ -364,7 +364,7 @@ fn parse_model<R: Read>(
                         line.last().unwrap().clone(),
                     ));
                 }
-                // check whether output is not in inputs of model
+                // check whether output is not in clocks of model
                 if model_clock_set.contains(line.last().unwrap()) {
                     return Err(BLIFError::DefinedAsModelClock(
                         filename.to_string(),
@@ -705,7 +705,35 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     sc_mapping.outputs[*output_index] = Some(wire.clone());
                 }
             }
-            // checking sc mapping
+            // checking sc mapping: for circuit input and output
+            for sci in &sc_mapping.outputs {
+                if let Some(sci) = sci {
+                    if let Some((wi, _)) = wire_in_outs.get(sci) {
+                        // check whether output is not in inputs of model
+                        if wi
+                            .iter()
+                            .any(|input| matches!(input, InputNode::ModelInput(_)))
+                        {
+                            return Err(BLIFError::DefinedAsModelInput(
+                                sc.filename.to_string(),
+                                sc.line_no,
+                                sci.clone(),
+                            ));
+                        }
+                        // check whether output is not in clocks of model
+                        if wi
+                            .iter()
+                            .any(|input| matches!(input, InputNode::ModelClock(_)))
+                        {
+                            return Err(BLIFError::DefinedAsModelClock(
+                                sc.filename.to_string(),
+                                sc.line_no,
+                                sci.clone(),
+                            ));
+                        }
+                    }
+                }
+            }
             // resolve connections
             // for (scii, sci) in sc.mapping.iter().enumerate() {}
         } else {
