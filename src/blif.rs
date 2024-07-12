@@ -222,6 +222,8 @@ enum BLIFError {
     ModelHaveLatches(String, usize),
     #[error("{0}:{1}: Model have clocks")]
     ModelHaveClocks(String, usize),
+    #[error("Cycle in model {0} caused by {1}")]
+    CycleInModel(String, String),
 }
 
 // structures of BLIF
@@ -641,6 +643,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     }
     #[derive(Clone)]
     struct StackEntry {
+        name: String,
         node: Node,
         way: usize,
     }
@@ -818,17 +821,22 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         OutputNode::Subcircuit(sc, sco) => Node::Subcircuit(*sc, *sco),
                     }
                 } else if !wi.is_empty() {
-                    match wi.first().unwrap() {
-                        InputNode::ModelInput(mi) => Node::ModelInput(*mi),
-                        InputNode::ModelClock(mi) => Node::ModelClock(*mi),
-                        _ => {
-                            panic!("Unexpected!");
-                        }
-                    }
+                    wi.iter()
+                        .filter_map(|x| match x {
+                            InputNode::ModelInput(mi) => Some(Node::ModelInput(*mi)),
+                            InputNode::ModelClock(mi) => Some(Node::ModelClock(*mi)),
+                            _ => None,
+                        })
+                        .next()
+                        .unwrap()
                 } else {
                     panic!("Unexpected!");
                 };
-                stack.push(StackEntry { node, way: 0 });
+                stack.push(StackEntry {
+                    name: outname.clone(),
+                    node,
+                    way: 0,
+                });
             } else {
                 return Err(BLIFError::UndefinedWire(
                     model_name.clone(),
@@ -837,7 +845,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             };
 
             while !stack.is_empty() {
-                let top = stack.last().unwrap();
+                let mut top = stack.last_mut().unwrap();
                 let way = top.way;
                 let way_num = match top.node {
                     Node::Zero | Node::ModelInput(_) | Node::ModelClock(_) => 0,
@@ -855,9 +863,60 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         sc_mappings[j].outputs[k].clone().unwrap_or(String::new())
                     }
                 };
-                if way < way_num {
-                    if way == 0 {
+                if way == 0 {
+                    if !path_visited.contains(&top.name) {
+                        path_visited.insert(top.name.clone());
                     } else {
+                        return Err(BLIFError::CycleInModel(
+                            model_name.clone(),
+                            top.name.clone(),
+                        ));
+                    }
+                    if !visited.contains(&top.name) {
+                        visited.insert(top.name.clone());
+                    } else {
+                        path_visited.remove(&top.name);
+                        stack.pop();
+                        continue;
+                    }
+                }
+                if way < way_num {
+                    let child_name = match top.node {
+                        Node::Gate(j) => Some(model.gates[j].params[way].clone()),
+                        Node::Subcircuit(j, _) => sc_mappings[j].inputs[way].clone(),
+                        _ => None,
+                    };
+                    top.way += 1;
+                    if let Some(child_name) = child_name {
+                        let node = if let Some((wi, wo)) = wire_in_outs.get(&child_name) {
+                            if let Some(wo) = wo {
+                                match wo {
+                                    OutputNode::Gate(g) => Node::Gate(*g),
+                                    OutputNode::Subcircuit(sc, sco) => Node::Subcircuit(*sc, *sco),
+                                }
+                            } else if !wi.is_empty() {
+                                wi.iter()
+                                    .filter_map(|x| match x {
+                                        InputNode::ModelInput(mi) => Some(Node::ModelInput(*mi)),
+                                        InputNode::ModelClock(mi) => Some(Node::ModelClock(*mi)),
+                                        _ => None,
+                                    })
+                                    .next()
+                                    .unwrap()
+                            } else {
+                                panic!("Unexpected!");
+                            }
+                        } else {
+                            return Err(BLIFError::UndefinedWire(
+                                model_name.clone(),
+                                top.name.clone(),
+                            ));
+                        };
+                        stack.push(StackEntry {
+                            name: child_name.clone(),
+                            node,
+                            way: 0,
+                        });
                     }
                 } else {
                     match top.node {
@@ -945,6 +1004,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                             }
                         }
                     };
+                    path_visited.remove(&top.name);
                     stack.pop();
                 }
             }
