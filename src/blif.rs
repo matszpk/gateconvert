@@ -270,6 +270,7 @@ struct Model {
 #[derive(Clone, Debug)]
 struct MappingKey {
     model: String,
+    subcircuit: Option<usize>,
     wire: String,
 }
 
@@ -277,6 +278,10 @@ pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
     let mut out = String::new();
     for (k, t) in map {
         out += &k.model;
+        if let Some(subc) = k.subcircuit {
+            out += &subc.to_string();
+            out.push(':');
+        }
         out.push(':');
         out += &k.wire;
         out.push(' ');
