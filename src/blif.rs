@@ -242,16 +242,15 @@ struct Subcircuit {
 // if values >= circuit.input_len then is circuit output index: value - circuit.input_len.
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum CircuitMapping {
+    NoMapping,
+    // value, output index
+    Value(bool, usize),
     // wire name, input index
-    Input(String, usize),
+    Input(usize, bool),
     // wire name, output index
-    Output(String, usize),
-    // wire name, output index
-    LatchInput(String, usize),
-    // wire name, output index
-    LatchOutput(String, usize),
+    Output(usize, bool),
     // wire name, subcircuit index, clock_index
-    Clock(String, usize, usize),
+    Clock(usize, usize),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -262,11 +261,13 @@ struct Model {
     clocks: Vec<String>,
     gates: Vec<Gate>,
     subcircuits: Vec<Subcircuit>,
+    total_clock_num: usize,
     // circuit: format:
     // first element - table circuit - same circuit,
     // second element - circuit mapping: in form:
+    //     index - in order: [model inputs, model clocks, model outputs]
     //     value - (name of model, name of wire, mapping to circuit)
-    circuit: Option<(TableCircuit, Vec<CircuitMapping>)>,
+    circuit: Option<(Circuit<usize>, Vec<CircuitMapping>)>,
 }
 
 #[derive(Clone, Debug)]
@@ -349,6 +350,7 @@ fn parse_model<R: Read>(
         latches: vec![],
         clocks: vec![],
         gates: vec![],
+        total_clock_num: 0,
         subcircuits: vec![],
         circuit: None,
     };
@@ -807,10 +809,8 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 let top = stack.last().unwrap();
                 let way = top.way;
                 let way_num = match top.node {
-                    Node::Zero
-                    | Node::ModelInput(_)
-                    | Node::ModelClock(_)
-                    | Node::ModelOutput(_) => 0,
+                    Node::Zero | Node::ModelInput(_) | Node::ModelClock(_) => 0,
+                    Node::ModelOutput(_) => 1,
                     Node::Gate(j) => model.gates[j].params.len(),
                     Node::Subcircuit(j, _) => sc_mappings[j].outputs.len(),
                 };
@@ -842,7 +842,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         Node::Gate(j) => {
                             if !boolvar_map.contains_key(&name) {
                                 let gate = &model.gates[j];
-                                // gate.circuit();
                                 // resolve gate params (inputs)
                                 let expr = match &gate.circuit {
                                     TableCircuit::Value(v) => BoolVarSys::from(*v),
@@ -863,7 +862,57 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                 boolvar_map.insert(name.clone(), expr);
                             }
                         }
-                        Node::Subcircuit(j, k) => if !boolvar_map.contains_key(&name) {},
+                        Node::Subcircuit(j, k) => {
+                            if !boolvar_map.contains_key(&name) {
+                                let sc_mapping = &sc_mappings[j];
+                                let subc_model = &model_map[&model.subcircuits[j].model];
+                                let circuit_mapping = &subc_model.circuit.as_ref().unwrap().1;
+                                let output_count = circuit_mapping
+                                    .iter()
+                                    .filter(|c| matches!(c, CircuitMapping::Output(_, _)))
+                                    .count();
+                                let total_input_len = model.inputs.len() + model.total_clock_num;
+                                let circ_outputs = BoolVarSys::from_circuit(
+                                    subc_model.circuit.as_ref().unwrap().0.clone(),
+                                    circuit_mapping[0..total_input_len]
+                                        .iter()
+                                        .enumerate()
+                                        .filter_map(|(idx, p)| {
+                                            if matches!(
+                                                p,
+                                                CircuitMapping::Input(_, _)
+                                                    | CircuitMapping::Clock(_, _)
+                                            ) {
+                                                if let Some(scmap_name) = &sc_mapping.inputs[idx] {
+                                                    Some(boolvar_map[scmap_name].clone())
+                                                } else {
+                                                    Some(BoolVarSys::from(false))
+                                                }
+                                            } else {
+                                                Some(BoolVarSys::from(false))
+                                            }
+                                        }),
+                                );
+                                for (i, c) in circuit_mapping[total_input_len..].iter().enumerate()
+                                {
+                                    match c {
+                                        CircuitMapping::Value(v, _) => {
+                                            boolvar_map.insert(
+                                                model.outputs[i].clone(),
+                                                BoolVarSys::from(*v),
+                                            );
+                                        }
+                                        CircuitMapping::Output(ci, _) => {
+                                            boolvar_map.insert(
+                                                model.outputs[i].clone(),
+                                                circ_outputs[*ci].clone(),
+                                            );
+                                        }
+                                        _ => (),
+                                    }
+                                }
+                            }
+                        }
                     };
                     stack.pop();
                 }
@@ -1002,6 +1051,7 @@ c   # ‘\’ here only to demonstrate its use
                             circuit: TableCircuit::Value(false),
                         }
                     ],
+                    total_clock_num: 0,
                     subcircuits: vec![],
                     circuit: None,
                 }
@@ -1078,6 +1128,7 @@ nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
                             )),
                         },
                     ],
+                    total_clock_num: 0,
                     subcircuits: vec![Subcircuit {
                         model: "calc0".to_string(),
                         mappings: strs2_to_vec_string([
