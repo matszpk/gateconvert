@@ -1807,5 +1807,49 @@ x1 1
                 0
             )
         );
+        // graph of connection
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3
+and(0,1) nor(2,3) nor(4,5):0n nimpl(0,2) nimpl(6,7):1n}(4)"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d
+.outputs x y
+.names a b t0
+11 1
+.names c d t1
+00 1
+.names a c t2
+10 1
+.names t0 t1 x
+1- 1
+-1 1
+.names x t2 y
+1- 1
+-1 1
+.end
+"##,
+                0
+            )
+        );
     }
 }
