@@ -1684,4 +1684,52 @@ x1 1
         gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
         Ok(model_map[&main_model_name].clone())
     }
+
+    #[test]
+    fn test_gen_model_circuit() {
+        use CircuitMapping::*;
+        assert_eq!(
+            Ok(Model {
+                inputs: vec![],
+                outputs: strs_to_vec_string(["x", "y", "z"]),
+                latches: vec![],
+                clocks: vec![],
+                gates: vec![
+                    Gate {
+                        params: vec![],
+                        output: "x".to_string(),
+                        circuit: TableCircuit::Value(false),
+                    },
+                    Gate {
+                        params: vec![],
+                        output: "y".to_string(),
+                        circuit: TableCircuit::Value(true),
+                    },
+                    Gate {
+                        params: vec![],
+                        output: "z".to_string(),
+                        circuit: TableCircuit::Value(false),
+                    }
+                ],
+                subcircuits: vec![],
+                circuit: Some((
+                    Circuit::new(0, [], []).unwrap(),
+                    vec![Value(false), Value(true), Value(false)]
+                )),
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.outputs x y
+.outputs z
+.names x
+.names y
+1
+.names z
+0
+.end
+"##,
+                0
+            )
+        );
+    }
 }
