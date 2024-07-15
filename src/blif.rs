@@ -627,10 +627,8 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     enum Node {
         ModelInput(usize),
         ModelClock(usize),
-        ModelOutput(usize),
         Gate(usize),
         Subcircuit(usize, usize),
-        Zero,
     }
     #[derive(Clone)]
     struct SubcircuitMapping {
@@ -853,15 +851,12 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 let mut top = stack.last_mut().unwrap();
                 let way = top.way;
                 let way_num = match top.node {
-                    Node::Zero | Node::ModelInput(_) | Node::ModelClock(_) => 0,
-                    Node::ModelOutput(_) => 1,
+                    Node::ModelInput(_) | Node::ModelClock(_) => 0,
                     Node::Gate(j) => model.gates[j].params.len(),
                     Node::Subcircuit(j, _) => sc_mappings[j].outputs.len(),
                 };
                 let name = match top.node {
-                    Node::Zero => String::new(),
                     Node::ModelInput(j) => model.inputs[j].clone(),
-                    Node::ModelOutput(j) => model.outputs[j].clone(),
                     Node::ModelClock(j) => model.clocks[j].clone(),
                     Node::Gate(j) => model.gates[j].output.clone(),
                     Node::Subcircuit(j, k) => {
@@ -925,15 +920,11 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     }
                 } else {
                     match top.node {
-                        Node::Zero => {
-                            boolvar_map.insert(name.clone(), BoolVarSys::from(false));
-                        }
                         Node::ModelInput(_) | Node::ModelClock(_) => {
                             if !boolvar_map.contains_key(&name) {
                                 boolvar_map.insert(name.clone(), BoolVarSys::var());
                             }
                         }
-                        Node::ModelOutput(_) => (),
                         Node::Gate(j) => {
                             if !boolvar_map.contains_key(&name) {
                                 let gate = &model.gates[j];
