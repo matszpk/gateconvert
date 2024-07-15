@@ -1663,4 +1663,25 @@ x1 1
             )
         );
     }
+
+    fn gen_model_circuit_helper(text: &str, model_num: usize) -> Result<Model, String> {
+        let mut circuit_cache = CircuitCache::new();
+        let mut gate_cache = GateCache::new();
+        let mut model_map = ModelMap::new();
+        let mut bytes = BLIFTokensReader::new(text.as_bytes());
+        let (main_model_name, main_model) =
+            parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
+                .map_err(|e| e.to_string())
+                .unwrap();
+        model_map.insert(main_model_name.clone(), main_model);
+        for i in 0..model_num {
+            let (model_name, model) =
+                parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
+                    .map_err(|e| e.to_string())
+                    .unwrap();
+            model_map.insert(model_name.clone(), model);
+        }
+        gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
+        Ok(model_map[&main_model_name].clone())
+    }
 }
