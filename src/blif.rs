@@ -1983,5 +1983,35 @@ and(9,12):0n nor(9,12):1}(5)
                 0
             )
         );
+        // test various passing inputs into gate
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::new(2, [Gate::new_and(0, 1)], [(2, false)]).unwrap(),
+                    vec![
+                        NoMapping,
+                        Input(false),
+                        NoMapping,
+                        Input(false),
+                        NoMapping,
+                        Output(false)
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x
+.names a b c d e x
+-1-1- 1
+.end
+"##,
+                0
+            )
+        );
     }
 }
