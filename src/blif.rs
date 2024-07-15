@@ -1271,8 +1271,8 @@ c   # ‘\’ here only to demonstrate its use
                             output: "t1".to_string(),
                             circuit: TableCircuit::Circuit((
                                 Circuit::from_str(
-                                    r##"{0 1 2 3 nor(1,2) and(1,2)
-nimpl(3,4) nor(0,6) nor(5,7) xor(6,8):0}(4)"##
+                                    r##"{0 1 2 3 and(1,2) nor(1,2)
+nor(0,4) xor(3,4) nimpl(7,5) nor(6,8):0}(4)"##
                                 )
                                 .unwrap(),
                                 vec![Some(0), Some(1), Some(2), Some(3)],
@@ -1695,6 +1695,7 @@ x1 1
     }
 
     fn gen_model_circuit_helper(text: &str, model_num: usize) -> Result<CircuitData, String> {
+        println!("ModelStart:");
         let mut circuit_cache = CircuitCache::new();
         let mut gate_cache = GateCache::new();
         let mut model_map = ModelMap::new();
@@ -1704,7 +1705,7 @@ x1 1
                 .map_err(|e| e.to_string())
                 .unwrap();
         model_map.insert(main_model_name.clone(), main_model);
-        for i in 0..model_num {
+        for _ in 0..model_num {
             let (model_name, model) =
                 parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
                     .map_err(|e| e.to_string())
@@ -1712,6 +1713,9 @@ x1 1
             model_map.insert(model_name.clone(), model);
         }
         gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
+        for g in &model_map[&main_model_name].gates {
+            println!("ModelGate: {:?}", g);
+        }
         Ok(CircuitData::from(model_map[&main_model_name].clone()))
     }
 
@@ -1846,6 +1850,59 @@ and(0,1) nor(2,3) nor(4,5):0n nimpl(0,2) nimpl(6,7):1n}(4)"##
 .names x t2 y
 1- 1
 -1 1
+.end
+"##,
+                0
+            )
+        );
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4
+and(0,1) and(5,2) xor(0,2) nor(6,7) nor(2,3) nimpl(9,4) nor(7,10) and(8,11):0n nor(8,11):1}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.names a b c t0
+111 1
+.names a c e t1
+100 1
+010 1
+101 1
+011 1
+.names c d e t2
+000 1
+.names t0 t1 u0
+1- 1
+-1 1
+.names t1 t2 u1
+1- 1
+-1 1
+.names u0 u1 x
+1- 1
+-1 1
+.names u0 u1 y
+11 1
 .end
 "##,
                 0
