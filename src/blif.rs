@@ -611,14 +611,14 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         .subcircuits
         .iter()
         .all(|sc| model_map.get(&sc.model).unwrap().circuit.is_some()));
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     enum InputNode {
         ModelInput(usize),
         ModelClock(usize),
         Gate(usize, usize),       // gate index, parameter index
         Subcircuit(usize, usize), // subcircuit index, input index
     }
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     enum OutputNode {
         Gate(usize),              // gate index
         Subcircuit(usize, usize), // subcircuit index, output index
@@ -643,6 +643,8 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         node: Node,
         way: usize,
     }
+
+    let model_output_set = HashSet::<String>::from_iter(model.outputs.iter().cloned());
     let mut wire_in_outs = HashMap::<String, (Vec<InputNode>, Option<OutputNode>)>::new();
     for (i, input) in model.inputs.iter().enumerate() {
         if let Some((wi, _)) = wire_in_outs.get_mut(input) {
@@ -802,7 +804,13 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             ));
         }
     }
-    // TODO: Add checking whether gate or subcircuit outputs is connected to something
+    println!("WIO: {:?}", wire_in_outs);
+    // check whether name tied to some output
+    for (name, (wi, wo)) in &wire_in_outs {
+        if wo.is_some() && wi.is_empty() && !model_output_set.contains(name) {
+            return Err(BLIFError::UndefinedWire(model_name.clone(), name.clone()));
+        }
+    }
 
     // creating circuit
     let (circuit, circuit_mapping) = callsys(|| {
@@ -1767,6 +1775,25 @@ x1 1
                 r##".model simple
 .inputs a b c
 .outputs x y z
+.names a b x
+11 1
+.names b c y
+1- 1
+-1 1
+.names a c z
+0- 1
+-1 1
+.end
+"##,
+                0
+            )
+        );
+        assert_eq!(
+            Err("Wire z in model simple is undefined".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs x y
 .names a b x
 11 1
 .names b c y
