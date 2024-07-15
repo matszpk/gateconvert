@@ -2084,5 +2084,191 @@ and(9,12):0n nor(9,12):1}(5)
                 3
             )
         );
+        // subcircuits
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4
+and(0,1) and(5,2) xor(0,2) xor(7, 4) nor(6,8) nor(2,3) nimpl(10,4) nor(8,11)
+and(9,12):0n nor(9,12):1}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.subckt model0 a0=a a1=b a2=c a3=d a4=e x0=t0 x1=t1 x2=t2
+.names t0 t1 u0
+1- 1
+-1 1
+.names t1 t2 u1
+1- 1
+-1 1
+.names u0 u1 x
+1- 1
+-1 1
+.names u0 u1 y
+11 1
+.end
+.model model0
+.inputs a0 a1 a2 a3 a4
+.outputs x0 x1 x2
+.names a0 a1 a2 x0
+111 1
+.names a0 a2 a4 x1
+100 1
+010 1
+001 1
+111 1
+.names a2 a3 a4 x2
+000 1
+.end
+"##,
+                1
+            )
+        );
+        // subcircuits 2
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4
+and(0,1) and(5,2) xor(0,2) xor(7, 4) nor(6,8) nor(2,3) nimpl(10,4) nor(8,11)
+and(9,12):0n nor(9,12):1}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.subckt model0 a0=a a1=b a2=c a3=d a4=e x0=t0 x1=t1 x2=t2
+.names t0 t1 u0
+1- 1
+-1 1
+.names t1 t2 u1
+1- 1
+-1 1
+.names u0 u1 x
+1- 1
+-1 1
+.names u0 u1 y
+11 1
+.end
+.model model0
+.inputs a0 a1 a2 a3 a4
+.outputs x0 x1 x2
+.names a0 a1 a2 x0
+111 1
+.names a0 a2 a4 x1
+100 1
+010 1
+001 1
+111 1
+.names a2 a3 a4 x2
+000 1
+.end
+"##,
+                1
+            )
+        );
+        // subcircuits 3
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y", "z", "w", "or"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4 xor(0,1) xor(5,2) and(0,1) xor(0,1) and(8,2) nor(7,9)
+xor(10,3) xor(11,4) and(6,12):0 nimpl(3,10) xor(10,3) nimpl(4,15) nor(14,16) nimpl(10,17):1
+xor(6,12):2n xor(10,17):3n nor(13,18) and(19,20) and(21,22):4n}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y z w or
+.subckt fulladder a=a b=b cin=c s=s0 cout=c0
+.subckt fulladder a=c0 b=d cin=e s=s1 cout=c1
+.names s0 s1 x
+10 1
+.names c0 c1 y
+01 1
+.names s0 s1 z
+10 1
+01 1
+.names c0 c1 w
+00 1
+11 1
+.names x y z w or
+0000 0
+.end
+.model fulladder
+.inputs a b cin
+.outputs s cout
+.names a b k
+10 1
+01 1
+.names k cin s
+10 1
+01 1
+.names a b cin cout
+11- 1
+1-1 1
+-11 1
+.end
+"##,
+                1
+            )
+        );
     }
 }
