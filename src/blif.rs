@@ -1751,6 +1751,36 @@ x1 1
         assert_eq!(
             Ok(CircuitData {
                 inputs: strs_to_vec_string(["a", "b", "c"]),
+                clocks: strs_to_vec_string(["d"]),
+                outputs: strs_to_vec_string(["a", "b", "c", "d"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::new(4, [], [(0, false), (1, false), (2, false), (3, false)]).unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Clock,
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.clock d
+.outputs a b c d
+.end
+"##,
+                0
+            )
+        );
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c"]),
                 clocks: vec![],
                 outputs: strs_to_vec_string(["x", "y", "z"]),
                 latches: vec![],
