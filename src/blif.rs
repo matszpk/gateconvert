@@ -1908,5 +1908,59 @@ and(0,1) and(5,2) xor(0,2) nor(6,7) nor(2,3) nimpl(9,4) nor(7,10) and(8,11):0n n
                 0
             )
         );
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4
+and(0,1) and(5,2) xor(0,2) xor(7, 4) nor(6,8) nor(2,3) nimpl(10,4) nor(8,11)
+and(9,12):0n nor(9,12):1}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.names a b c t0
+111 1
+.names a c e t1
+100 1
+010 1
+001 1
+111 1
+.names c d e t2
+000 1
+.names t0 t1 u0
+1- 1
+-1 1
+.names t1 t2 u1
+1- 1
+-1 1
+.names u0 u1 x
+1- 1
+-1 1
+.names u0 u1 y
+11 1
+.end
+"##,
+                0
+            )
+        );
     }
 }
