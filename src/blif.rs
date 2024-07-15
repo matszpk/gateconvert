@@ -605,6 +605,7 @@ fn parse_model<R: Read>(
 }
 
 fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(), BLIFError> {
+    // TODO: handle empty output model
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
@@ -983,18 +984,20 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                 {
                                     match c {
                                         CircuitMapping::Value(v) => {
-                                            boolvar_map.insert(
-                                                sc_mapping.outputs[i].clone().unwrap(),
-                                                BoolVarSys::from(*v),
-                                            );
+                                            if let Some(scname) = sc_mapping.outputs[i].as_ref() {
+                                                boolvar_map
+                                                    .insert(scname.clone(), BoolVarSys::from(*v));
+                                            }
                                         }
                                         CircuitMapping::Output(ci) => {
                                             let old_out_count = out_count;
                                             out_count += 1;
-                                            boolvar_map.insert(
-                                                sc_mapping.outputs[i].clone().unwrap(),
-                                                circ_outputs[old_out_count].clone(),
-                                            );
+                                            if let Some(scname) = sc_mapping.outputs[i].as_ref() {
+                                                boolvar_map.insert(
+                                                    scname.clone(),
+                                                    circ_outputs[old_out_count].clone(),
+                                                );
+                                            }
                                         }
                                         _ => (),
                                     }
@@ -2265,6 +2268,47 @@ xor(6,12):2n xor(10,17):3n nor(13,18) and(19,20) and(21,22):4n}(5)
 11- 1
 1-1 1
 -11 1
+.end
+"##,
+                1
+            )
+        );
+        // subcircuits 4: unused inputs and outputs
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str("{0 1 2 3 4 xor(1,2) nimpl(5,0):0 nimpl(4,3):1}(5)").unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.subckt mpx4 m=a n=b p=c y0=x
+.subckt mpx4 m=d o=e y1=y
+.end
+.model mpx4
+.inputs m n o p
+.outputs y0 y1
+.names m n o p y0
+0100 1
+0001 1
+.names m n o p y1
+0010 1
+0001 1
 .end
 "##,
                 1
