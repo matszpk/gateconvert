@@ -176,6 +176,8 @@ enum BLIFError {
     NoModelName(String, usize),
     #[error("{0}:{1}: Expected .end")]
     NoEnd(String, usize),
+    #[error("Model {0} without outputs")]
+    ModelWithoutOutputs(String),
     #[error("{0}:{1}: Model declarations in model commands")]
     ModelDeclsInCommands(String, usize),
     #[error("{0}:{1}: Name {2} of model already used")]
@@ -599,13 +601,15 @@ fn parse_model<R: Read>(
             }
         }
     }
+    if model.outputs.is_empty() {
+        return Err(BLIFError::ModelWithoutOutputs(model_name.clone()));
+    }
     // next phase - checking graph of gates and subcircuits - check whether graph have cycles.
     // next phase will be done while resolving graph of models.
     Ok((model_name, model))
 }
 
 fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(), BLIFError> {
-    // TODO: handle empty output model
     let model = model_map.get(&model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
