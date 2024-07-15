@@ -853,7 +853,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 let way_num = match top.node {
                     Node::ModelInput(_) | Node::ModelClock(_) => 0,
                     Node::Gate(j) => model.gates[j].params.len(),
-                    Node::Subcircuit(j, _) => sc_mappings[j].outputs.len(),
+                    Node::Subcircuit(j, _) => sc_mappings[j].inputs.len(),
                 };
                 let name = match top.node {
                     Node::ModelInput(j) => model.inputs[j].clone(),
@@ -957,7 +957,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                     .iter()
                                     .filter(|c| matches!(c, CircuitMapping::Output(_)))
                                     .count();
-                                let total_input_len = model.inputs.len();
+                                let total_input_len = subc_model.inputs.len();
                                 let circ_outputs = BoolVarSys::from_circuit(
                                     subc_model.circuit.as_ref().unwrap().0.clone(),
                                     circuit_mapping[0..total_input_len]
@@ -984,7 +984,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                     match c {
                                         CircuitMapping::Value(v) => {
                                             boolvar_map.insert(
-                                                model.outputs[i].clone(),
+                                                sc_mapping.outputs[i].clone().unwrap(),
                                                 BoolVarSys::from(*v),
                                             );
                                         }
@@ -992,7 +992,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                             let old_out_count = out_count;
                                             out_count += 1;
                                             boolvar_map.insert(
-                                                model.outputs[i].clone(),
+                                                sc_mapping.outputs[i].clone().unwrap(),
                                                 circ_outputs[old_out_count].clone(),
                                             );
                                         }
@@ -1702,6 +1702,7 @@ x1 1
                     .map_err(|e| e.to_string())
                     .unwrap();
             model_map.insert(model_name.clone(), model);
+            gen_model_circuit(model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
         }
         gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
         for g in &model_map[&main_model_name].gates {
@@ -2011,6 +2012,76 @@ and(9,12):0n nor(9,12):1}(5)
 .end
 "##,
                 0
+            )
+        );
+        // subcircuits
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4
+and(0,1) and(5,2) xor(0,2) xor(7, 4) nor(6,8) nor(2,3) nimpl(10,4) nor(8,11)
+and(9,12):0n nor(9,12):1}(5)
+"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d e
+.outputs x y
+.subckt model0 a0=a a1=b a2=c x0=t0
+.subckt model1 a0=a a1=c a2=e x0=t1
+.subckt model2 a0=c a1=d a2=e x0=t2
+.names t0 t1 u0
+1- 1
+-1 1
+.names t1 t2 u1
+1- 1
+-1 1
+.names u0 u1 x
+1- 1
+-1 1
+.names u0 u1 y
+11 1
+.end
+.model model0
+.inputs a0 a1 a2
+.outputs x0
+.names a0 a1 a2 x0
+111 1
+.end
+.model model1
+.inputs a0 a1 a2
+.outputs x0
+.names a0 a1 a2 x0
+100 1
+010 1
+001 1
+111 1
+.end
+.model model2
+.inputs a0 a1 a2
+.outputs x0
+.names a0 a1 a2 x0
+000 1
+.end
+"##,
+                3
             )
         );
     }
