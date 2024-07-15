@@ -1664,7 +1664,28 @@ x1 1
         );
     }
 
-    fn gen_model_circuit_helper(text: &str, model_num: usize) -> Result<Model, String> {
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct CircuitData {
+        inputs: Vec<String>,
+        clocks: Vec<String>,
+        outputs: Vec<String>,
+        latches: Vec<(String, String)>,
+        circuit: (Circuit<usize>, Vec<CircuitMapping>),
+    }
+
+    impl From<Model> for CircuitData {
+        fn from(m: Model) -> Self {
+            Self {
+                inputs: m.inputs,
+                clocks: m.clocks,
+                outputs: m.outputs,
+                latches: m.latches,
+                circuit: m.circuit.unwrap(),
+            }
+        }
+    }
+
+    fn gen_model_circuit_helper(text: &str, model_num: usize) -> Result<CircuitData, String> {
         let mut circuit_cache = CircuitCache::new();
         let mut gate_cache = GateCache::new();
         let mut model_map = ModelMap::new();
@@ -1682,40 +1703,23 @@ x1 1
             model_map.insert(model_name.clone(), model);
         }
         gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
-        Ok(model_map[&main_model_name].clone())
+        Ok(CircuitData::from(model_map[&main_model_name].clone()))
     }
 
     #[test]
     fn test_gen_model_circuit() {
+        use gatesim::Gate;
         use CircuitMapping::*;
         assert_eq!(
-            Ok(Model {
+            Ok(CircuitData {
                 inputs: vec![],
+                clocks: vec![],
                 outputs: strs_to_vec_string(["x", "y", "z"]),
                 latches: vec![],
-                clocks: vec![],
-                gates: vec![
-                    Gate {
-                        params: vec![],
-                        output: "x".to_string(),
-                        circuit: TableCircuit::Value(false),
-                    },
-                    Gate {
-                        params: vec![],
-                        output: "y".to_string(),
-                        circuit: TableCircuit::Value(true),
-                    },
-                    Gate {
-                        params: vec![],
-                        output: "z".to_string(),
-                        circuit: TableCircuit::Value(false),
-                    }
-                ],
-                subcircuits: vec![],
-                circuit: Some((
+                circuit: (
                     Circuit::new(0, [], []).unwrap(),
                     vec![Value(false), Value(true), Value(false)]
-                )),
+                )
             }),
             gen_model_circuit_helper(
                 r##".model simple
@@ -1726,6 +1730,50 @@ x1 1
 1
 .names z
 0
+.end
+"##,
+                0
+            )
+        );
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y", "z"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::new(
+                        3,
+                        [
+                            Gate::new_and(0, 1),
+                            Gate::new_nor(1, 2),
+                            Gate::new_nimpl(0, 2),
+                        ],
+                        [(3, false), (4, true), (5, true)]
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs x y z
+.names a b x
+11 1
+.names b c y
+1- 1
+-1 1
+.names a c z
+0- 1
+-1 1
 .end
 "##,
                 0
