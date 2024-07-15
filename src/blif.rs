@@ -807,7 +807,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             ));
         }
     }
-    println!("WIO: {:?}", wire_in_outs);
     // check whether name tied to some output
     for (name, (wi, wo)) in &wire_in_outs {
         if wo.is_some() && wi.is_empty() && !model_output_set.contains(name) {
