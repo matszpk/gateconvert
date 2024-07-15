@@ -802,6 +802,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             ));
         }
     }
+    // TODO: Add checking whether gate or subcircuit outputs is connected to something
 
     // creating circuit
     let (circuit, circuit_mapping) = callsys(|| {
