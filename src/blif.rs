@@ -2499,6 +2499,25 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
             )
         );
         assert_eq!(
+            Err("top.blif:4: Model have clocks".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b
+.outputs x
+.subckt trivial x0=a x1=b y=x
+.end
+.model trivial
+.inputs x1
+.clock x0
+.outputs y
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
             Err("top.blif:6: Defined as model output x".to_string()),
             gen_model_circuit_helper(
                 r##".model simple
@@ -2536,6 +2555,40 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
 .end
 "##,
                 1
+            )
+        );
+        assert_eq!(
+            Err("top.blif:7: Defined as model clock d".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.clock d
+.outputs z
+.names c z
+1 1
+.subckt trivial x0=a x1=b y=d
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
+            Err("Wire y in model simple is undefined".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs c
+.outputs z y
+.names c z
+1 1
+.end
+"##,
+                0
             )
         );
     }
