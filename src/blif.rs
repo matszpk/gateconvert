@@ -174,8 +174,6 @@ enum BLIFError {
     NoModel(String, usize),
     #[error("{0}:{1}: Expected model name")]
     NoModelName(String, usize),
-    #[error("{0}:{1}: Expected .end")]
-    NoEnd(String, usize),
     #[error("Model {0} without outputs")]
     ModelWithoutOutputs(String),
     #[error("{0}:{1}: Model declarations in model commands")]
@@ -184,8 +182,6 @@ enum BLIFError {
     ModelNameUsed(String, usize, String),
     #[error("{0}:{1}: Model with name {2} is undefined")]
     UnknownModel(String, usize, String),
-    #[error("{0}:{1}: Parameters to model {2} doesn't match")]
-    ModelParamMatch(String, usize, String),
     #[error("{0}:{1}: Too few parameters")]
     TooFewParameters(String, usize),
     #[error("{0}:{1}: Unsupported latch input and output")]
@@ -327,9 +323,7 @@ fn parse_model<R: Read>(
 ) -> Result<(String, Model), BLIFError> {
     // get model name
     let mut model_name = String::new();
-    let mut last_line_no = 1;
     while let Some((line_no, line)) = reader.read_tokens()? {
-        last_line_no = line_no;
         if line[0] == ".model" {
             if let Some(name) = line.get(1) {
                 model_name = name.clone();
@@ -860,7 +854,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             };
 
             while !stack.is_empty() {
-                let mut top = stack.last_mut().unwrap();
+                let top = stack.last_mut().unwrap();
                 let way = top.way;
                 let way_num = match top.node {
                     Node::ModelInput(_) | Node::ModelClock(_) => 0,
@@ -1057,14 +1051,14 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             .iter()
             .zip(input_map.iter())
             .map(|(x, opti)| {
-                if let Some(new_index) = opti {
+                if opti.is_some() {
                     CircuitMapping::Input(latch_outputs.contains(x))
                 } else {
                     CircuitMapping::NoMapping
                 }
             })
-            .chain(model.clocks.iter().zip(input_map.iter()).map(|(x, opti)| {
-                if let Some(new_index) = opti {
+            .chain(model.clocks.iter().zip(input_map.iter()).map(|(_, opti)| {
+                if opti.is_some() {
                     CircuitMapping::Clock
                 } else {
                     CircuitMapping::NoMapping
