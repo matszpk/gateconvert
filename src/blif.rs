@@ -2518,5 +2518,25 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 1
             )
         );
+        assert_eq!(
+            Err("top.blif:6: Defined as model input d".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c d
+.outputs z
+.names c z
+1 1
+.subckt trivial x0=a x1=b y=d
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
     }
 }
