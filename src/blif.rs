@@ -276,7 +276,6 @@ impl Model {
     fn top_mapping(self) -> (Circuit<usize>, Vec<(String, AssignEntry)>) {
         let (circuit, mapping) = self.circuit.as_ref().unwrap();
         let circ_input_len = circuit.input_len();
-        let circ_output_len = circuit.outputs().len();
         let circ_outputs = circuit.outputs();
         let model_input_len = self.inputs.len();
         let model_clock_len = self.clocks.len();
