@@ -1188,13 +1188,19 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     CircuitMapping::NoMapping
                 }
             })
-            .chain(model.clocks.iter().zip(input_map.iter()).map(|(_, opti)| {
-                if opti.is_some() {
-                    CircuitMapping::Clock
-                } else {
-                    CircuitMapping::NoMapping
-                }
-            }))
+            .chain(
+                model
+                    .clocks
+                    .iter()
+                    .zip(input_map[model.inputs.len()..].iter())
+                    .map(|(_, opti)| {
+                        if opti.is_some() {
+                            CircuitMapping::Clock
+                        } else {
+                            CircuitMapping::NoMapping
+                        }
+                    }),
+            )
             .chain(circuit_out_mapping.into_iter())
             .collect::<Vec<_>>();
         Ok((circuit, circuit_mapping))
