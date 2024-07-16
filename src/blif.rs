@@ -2591,5 +2591,44 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 0
             )
         );
+        assert_eq!(
+            Err("Cycle in model simple caused by t0".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs z y
+.names a z
+1 1
+.names t0 b t0
+00 1
+.names t0 c y
+10 1
+.end
+"##,
+                0
+            )
+        );
+        assert_eq!(
+            Err("Cycle in model simple caused by t0".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs z y
+.names a z
+1 1
+.subckt and a=t0 b=b x=t0
+.names t0 c y
+10 1
+.end
+.model and
+.inputs a b
+.outputs x
+.names a b x
+11 1
+.end
+"##,
+                1
+            )
+        );
     }
 }
