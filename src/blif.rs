@@ -2378,5 +2378,49 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 1
             )
         );
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "e"]),
+                clocks: strs_to_vec_string(["c", "d"]),
+                outputs: strs_to_vec_string(["x", "y", "z"]),
+                latches: strs2_to_vec_string([("y", "a"), ("x", "e")]),
+                circuit: (
+                    Circuit::from_str(
+                        "{0 1 2 3 4 and(0,1):0 nor(3,4) and(6,2):1 nor(0,3) nimpl(8,2):2n}(5)"
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(true),
+                        Input(false),
+                        Input(true),
+                        Clock,
+                        Clock,
+                        Output(true),
+                        Output(true),
+                        Output(false)
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a
+.clock c d
+.inputs b e
+.outputs x y z
+.latch y a
+.latch x e
+.names a b x
+11 1
+.names c d e y
+001 1
+.names a c e z
+1-- 1
+-1- 1
+--1 1
+.end
+"##,
+                0
+            )
+        );
     }
 }
