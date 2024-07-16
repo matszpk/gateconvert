@@ -2630,5 +2630,30 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 1
             )
         );
+        assert_eq!(
+            Err("Cycle in model simple caused by t1".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs z y
+.names a z
+1 1
+.names t1 t2 t3
+10 1
+.names c b tx
+00 1
+.names tx t3 t0
+01 1
+.names t0 b t1
+00 1
+.names t3 c t2
+11 1
+.names t1 t2 y
+10 1
+.end
+"##,
+                0
+            )
+        );
     }
 }
