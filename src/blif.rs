@@ -216,6 +216,8 @@ enum BLIFError {
     DefinedAsModelClock(String, usize, String),
     #[error("{0}:{1}: Model input defined as input and clock {2}")]
     ModelInputAndClockBoth(String, usize, String),
+    #[error("{0}:{1}: Defined as model output {2}")]
+    DefinedAsModelOutput(String, usize, String),
     #[error("Wire {1} in model {0} is undefined")]
     UndefinedWire(String, String),
     #[error("Already defined as output in {0}:{1}")]
@@ -737,6 +739,17 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
                 if let Some(output_index) = sc_output_map.get(model_wire) {
                     sc_mapping.outputs[*output_index] = Some(wire.clone());
+                }
+            }
+            for sci in &sc_mapping.inputs {
+                if let Some(sci) = sci {
+                    if model_output_set.contains(sci) {
+                        return Err(BLIFError::DefinedAsModelOutput(
+                            sc.filename.to_string(),
+                            sc.line_no,
+                            sci.clone(),
+                        ));
+                    }
                 }
             }
             // checking sc mapping: for circuit input and output
@@ -2478,6 +2491,26 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
 .inputs x0 x1
 .outputs y
 .latch y x0
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
+            Err("top.blif:6: Defined as model output x".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b
+.outputs x y z
+.names a z
+1 1
+.subckt trivial x0=x x1=b y=y
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
 .names x0 x1 y
 01 1
 .end
