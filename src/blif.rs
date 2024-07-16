@@ -1165,6 +1165,20 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         .filter_map(|s| boolvar_map.get(s).cloned()),
                 ),
         );
+        let input_map = {
+            let mut input_map_new = vec![None; model.inputs.len() + model.clocks.len()];
+            for (newi, (i, _)) in model
+                .inputs
+                .iter()
+                .chain(model.clocks.iter())
+                .enumerate()
+                .filter(|(_, s)| boolvar_map.contains_key(*s))
+                .enumerate()
+            {
+                input_map_new[i] = input_map[newi];
+            }
+            input_map_new
+        };
         let circuit_out_mapping = model
             .outputs
             .iter()
@@ -1177,6 +1191,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
             })
             .collect::<Vec<_>>();
+        println!("InputMap: {:?}", input_map);
         let circuit_mapping = model
             .inputs
             .iter()
@@ -2561,6 +2576,44 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 0
             )
         );
+        // clock mapping
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "t0"]),
+                clocks: strs_to_vec_string(["d", "e", "f", "t1"]),
+                outputs: strs_to_vec_string(["x", "y"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str("{0 1 2 3 and(0,1):0 and(2,3):1}(4)").unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        NoMapping,
+                        NoMapping,
+                        NoMapping,
+                        Clock,
+                        NoMapping,
+                        Clock,
+                        Output(false),
+                        Output(false)
+                    ]
+                )
+            }),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c t0
+.outputs x y
+.clock d e f t1
+.names a b x
+11 1
+.names e t1 y
+11 1
+.end
+"##,
+                0
+            )
+        );
+        // error handling
         assert_eq!(
             Err("Already defined as output in simple:t0".to_string()),
             gen_model_circuit_helper(
