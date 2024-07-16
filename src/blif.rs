@@ -1191,7 +1191,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
             })
             .collect::<Vec<_>>();
-        println!("InputMap: {:?}", input_map);
         let circuit_mapping = model
             .inputs
             .iter()
