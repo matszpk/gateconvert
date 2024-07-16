@@ -413,7 +413,7 @@ impl Model {
         // translating circuit
         let circuit = translate_inputs(circuit.clone(), &circuit_input_trans);
         let circuit = translate_outputs(circuit, &circuit_output_trans);
-        (circuit, vec![])
+        (circuit, assign_mapping)
     }
 }
 
