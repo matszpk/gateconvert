@@ -2856,11 +2856,12 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
         gen_model_circuit(main_model_name.clone(), &mut model_map)
             .map_err(|e| e.to_string())
             .unwrap();
+        // println!("Model: {:?}", model_map[&main_model_name]);
         model_map[&main_model_name].clone().top_mapping()
     }
 
     #[test]
-    fn test_top_mapping() {
+    fn test_model_top_mapping() {
         assert_eq!(
             (
                 Circuit::new(0, [], []).unwrap(),
@@ -2905,6 +2906,42 @@ nor(1,2) nimpl(9,3):2n and(2,3) and(11,4):3}(5)"##
             model_top_mapping_helper(
                 r##".model simple
 .input a0 a1 a2 a3 a4
+.outputs x0 x1 x2 x3
+.names a0 a1 a2 x0
+111 1
+.names a0 a2 a3 x1
+000 0
+.names a1 a2 a3 x2
+000 0
+.names a2 a3 a4 x3
+111 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            (
+                Circuit::from_str(
+                    r##"{0 1 2 3 4 and(2,3) and(5,0):0 nor(2,0) nimpl(7,4):1n
+nor(3,0) nimpl(9,4):2n and(0,4) and(11,1):3}(5)"##
+                )
+                .unwrap(),
+                strt_to_vec_string([
+                    ("a0", AssignEntry::Var(2, false)),
+                    ("a1", AssignEntry::Var(3, false)),
+                    ("a3", AssignEntry::Var(4, false)),
+                    ("a2", AssignEntry::Var(0, false)),
+                    ("a4", AssignEntry::Var(1, false)),
+                    ("x0", AssignEntry::Var(6, false)),
+                    ("x1", AssignEntry::Var(8, true)),
+                    ("x2", AssignEntry::Var(10, true)),
+                    ("x3", AssignEntry::Var(12, false)),
+                ])
+            ),
+            model_top_mapping_helper(
+                r##".model simple
+.input a0 a1 a3
+.clock a2 a4
 .outputs x0 x1 x2 x3
 .names a0 a1 a2 x0
 111 1
