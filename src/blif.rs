@@ -816,8 +816,11 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
 
     // creating circuit
     let (circuit, circuit_mapping) = callsys(|| {
+        // boolvar_map - map of expressions to names used in model
         let mut boolvar_map = HashMap::<String, BoolVarSys>::new();
+        // visited nodes in graphs
         let mut visited = HashSet::<String>::new();
+        // path_visited - to detect cycles
         let mut path_visited = HashSet::<String>::new();
         let mut stack = vec![];
         for outname in &model.outputs {
@@ -923,6 +926,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         });
                     }
                 } else {
+                    // resolve outputs
                     match top.node {
                         Node::ModelInput(_) | Node::ModelClock(_) => {
                             if !boolvar_map.contains_key(&name) {
@@ -930,6 +934,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                             }
                         }
                         Node::Gate(j) => {
+                            // add gate's circuit to expressions and resolve gate output.
                             if !boolvar_map.contains_key(&name) {
                                 let gate = &model.gates[j];
                                 // resolve gate params (inputs)
@@ -949,15 +954,19 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                         .clone()
                                     }
                                 };
+                                // add output to boolvar_map expression
                                 boolvar_map.insert(name.clone(), expr);
                             }
                         }
                         Node::Subcircuit(j, _) => {
+                            // generate subcircuit's circuit to expressions
+                            // and resolve subcircuit outputs.
                             if !boolvar_map.contains_key(&name) {
                                 let sc_mapping = &sc_mappings[j];
                                 let subc_model = &model_map[&model.subcircuits[j].model];
                                 let circuit_mapping = &subc_model.circuit.as_ref().unwrap().1;
                                 let total_input_len = subc_model.inputs.len();
+                                // add outputs to expressions
                                 let circ_outputs = BoolVarSys::from_circuit(
                                     subc_model.circuit.as_ref().unwrap().0.clone(),
                                     circuit_mapping[0..total_input_len]
@@ -979,6 +988,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                         }),
                                 );
                                 let mut out_count = 0;
+                                // add subcircuit outputs to boolvar_map expression
                                 for (i, c) in circuit_mapping[total_input_len..].iter().enumerate()
                                 {
                                     match c {

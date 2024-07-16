@@ -176,7 +176,9 @@ fn from_aiger_int(
         way: usize,
         lit: usize,
     }
+    // visited nodes in graph
     let mut visited = vec![false; aig.max_var_index];
+    // path_visited - to detect cycles
     let mut path_visited = vec![false; aig.max_var_index];
     let mut stack = vec![];
     // XOR subpart gates will be skipped - if they are part of other path then included
