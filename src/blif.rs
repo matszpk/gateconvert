@@ -2,6 +2,7 @@ use crate::AssignEntry;
 use gategen::boolvar::*;
 use gategen::dynintvar::*;
 use gatesim::*;
+use gateutil::{reverse_trans, translate_inputs, translate_outputs};
 
 use crate::blif_pla::*;
 
@@ -269,6 +270,151 @@ struct Model {
     //     index - in order: [model inputs, model clocks, model outputs]
     //     value - (name of model, name of wire, mapping to circuit)
     circuit: Option<(Circuit<usize>, Vec<CircuitMapping>)>,
+}
+
+impl Model {
+    fn top_mapping(self) -> (Circuit<usize>, Vec<(String, AssignEntry)>) {
+        let (circuit, mapping) = self.circuit.as_ref().unwrap();
+        let circ_input_len = circuit.input_len();
+        let circ_output_len = circuit.outputs().len();
+        let circ_outputs = circuit.outputs();
+        let model_input_len = self.inputs.len();
+        let model_clock_len = self.clocks.len();
+        let model_output_len = self.outputs.len();
+        // circuit_mapping_indexes: index - mapping index,
+        //    value - for input or clock is circuit input index or for output is circuit output
+        let circuit_mapping_names = self
+            .inputs
+            .iter()
+            .cloned()
+            .chain(self.clocks.iter().cloned())
+            .chain(self.outputs.iter().cloned())
+            .collect::<Vec<_>>();
+        let circuit_mapping_indexes = {
+            let mut circuit_mapping_indexes =
+                vec![None; model_input_len + model_clock_len + model_output_len];
+            let mut input_count = 0;
+            for (i, cm) in mapping[0..model_input_len + model_clock_len]
+                .iter()
+                .enumerate()
+            {
+                if !matches!(cm, CircuitMapping::NoMapping | CircuitMapping::Value(_)) {
+                    circuit_mapping_indexes[i] = Some(input_count);
+                    input_count += 1;
+                }
+            }
+            let mut output_count = 0;
+            for (i, cm) in mapping
+                .iter()
+                .enumerate()
+                .skip(model_input_len + model_clock_len)
+            {
+                if !matches!(cm, CircuitMapping::NoMapping | CircuitMapping::Value(_)) {
+                    circuit_mapping_indexes[i] = Some(output_count);
+                    output_count += 1;
+                }
+            }
+            circuit_mapping_indexes
+        };
+        let model_input_map = HashMap::<String, usize>::from_iter(
+            self.inputs.iter().enumerate().map(|(i, x)| (x.clone(), i)),
+        );
+        let model_output_map = HashMap::<String, usize>::from_iter(
+            self.outputs.iter().enumerate().map(|(i, x)| (x.clone(), i)),
+        );
+        let state_mapping = self
+            .latches
+            .iter()
+            .map(|(model_out, model_in)| {
+                (
+                    model_input_len + model_clock_len + model_output_map[model_out],
+                    model_input_map[model_in],
+                )
+            })
+            .collect::<Vec<_>>();
+        // circuit_input_trans_rev: index - new index, value - old index
+        // first input states
+        let circuit_input_trans_rev = state_mapping
+            .iter()
+            .filter_map(|(_, model_input_idx)| circuit_mapping_indexes[*model_input_idx])
+            .chain(
+                // clocks
+                circuit_mapping_indexes[model_input_len..model_input_len + model_clock_len]
+                    .iter()
+                    .copied()
+                    .filter_map(|x| x),
+            )
+            .chain(
+                // inputs (not states)
+                circuit_mapping_indexes[0..model_input_len]
+                    .iter()
+                    .zip(mapping[0..model_input_len].iter())
+                    .filter_map(|(idx, cm)| {
+                        if matches!(cm, CircuitMapping::Input(false)) {
+                            *idx
+                        } else {
+                            None
+                        }
+                    }),
+            )
+            .collect::<Vec<_>>();
+        // circuit_output_trans: index - new index, value - old index
+        let circuit_output_trans_rev = state_mapping
+            .iter()
+            .filter_map(|(model_output_idx, _)| {
+                circuit_mapping_indexes[model_input_len + model_clock_len + *model_output_idx]
+            })
+            .chain(
+                // outputs (not states)
+                circuit_mapping_indexes[model_input_len + model_clock_len..]
+                    .iter()
+                    .zip(mapping[model_input_len + model_clock_len..].iter())
+                    .filter_map(|(idx, cm)| {
+                        if matches!(cm, CircuitMapping::Output(false)) {
+                            *idx
+                        } else {
+                            None
+                        }
+                    }),
+            )
+            .collect::<Vec<_>>();
+        let circuit_input_trans = reverse_trans(circuit_input_trans_rev);
+        let circuit_output_trans = reverse_trans(circuit_output_trans_rev);
+        // mapping
+        let assign_mapping = mapping
+            .into_iter()
+            .zip(circuit_mapping_indexes.into_iter())
+            .zip(circuit_mapping_names.into_iter())
+            .map(|((cm, ci), cn)| {
+                match cm {
+                    CircuitMapping::NoMapping => (cn.clone(), AssignEntry::NoMap),
+                    CircuitMapping::Value(v) => (cn.clone(), AssignEntry::Value(*v)),
+                    CircuitMapping::Input(_) | CircuitMapping::Clock =>
+                    // translate old circuit input into new circuit input
+                    {
+                        (
+                            cn.clone(),
+                            AssignEntry::Var(circuit_input_trans[ci.unwrap()], false),
+                        )
+                    }
+                    CircuitMapping::Output(_) => {
+                        let ci = ci.unwrap();
+                        // translate old circuit input into new circuit input
+                        let cwi = if circ_outputs[ci].0 < circ_input_len {
+                            circuit_input_trans[circ_outputs[ci].0]
+                        } else {
+                            circ_outputs[ci].0
+                        };
+                        (cn.clone(), AssignEntry::Var(cwi, circ_outputs[ci].1))
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+        // translating circuit
+        let circuit = translate_inputs(circuit.clone(), &circuit_input_trans);
+        let circuit = translate_outputs(circuit, &circuit_output_trans);
+        (circuit, vec![])
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
