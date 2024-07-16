@@ -2422,5 +2422,68 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 0
             )
         );
+        assert_eq!(
+            Err("Already defined as output in simple:t0".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs x
+.names a b t0
+11 1
+.subckt trivial x0=a x1=c y=t0
+.names t0 c x
+01 1
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
+            Err("Already defined as output in simple:t0".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b c
+.outputs x
+.subckt trivial x0=a x1=c y=t0
+.names a b t0
+11 1
+.names t0 c x
+01 1
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
+            Err("top.blif:4: Model have latches".to_string()),
+            gen_model_circuit_helper(
+                r##".model simple
+.inputs a b
+.outputs x
+.subckt trivial x0=a x1=b y=x
+.end
+.model trivial
+.inputs x0 x1
+.outputs y
+.latch y x0
+.names x0 x1 y
+01 1
+.end
+"##,
+                1
+            )
+        );
     }
 }
