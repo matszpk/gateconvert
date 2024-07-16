@@ -720,6 +720,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 inputs: vec![None; subc_model.inputs.len()],
                 outputs: vec![None; subc_model.outputs.len()],
             };
+            // model_wire - subcircuit model wire, wire - current model wire
             for (model_wire, wire) in &sc.mappings {
                 if let Some(input_index) = sc_input_map.get(model_wire) {
                     sc_mapping.inputs[*input_index] = Some(wire.clone());
