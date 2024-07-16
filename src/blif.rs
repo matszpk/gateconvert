@@ -573,11 +573,9 @@ fn parse_model<R: Read>(
                 });
             }
             ".start_kiss" => {
-                after_model_decls = true;
                 return Err(BLIFError::UnsupportedFSM(filename.to_string(), line_no));
             }
             ".gate" | ".mlatch" => {
-                after_model_decls = true;
                 return Err(BLIFError::UnsupportedGate(filename.to_string(), line_no));
             }
             ".end" => {
@@ -822,7 +820,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         let mut visited = HashSet::<String>::new();
         let mut path_visited = HashSet::<String>::new();
         let mut stack = vec![];
-        for (i, outname) in model.outputs.iter().enumerate() {
+        for outname in &model.outputs {
             if let Some((wi, wo)) = wire_in_outs.get(outname) {
                 let node = if let Some(wo) = wo {
                     match wo {
@@ -954,15 +952,11 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                 boolvar_map.insert(name.clone(), expr);
                             }
                         }
-                        Node::Subcircuit(j, k) => {
+                        Node::Subcircuit(j, _) => {
                             if !boolvar_map.contains_key(&name) {
                                 let sc_mapping = &sc_mappings[j];
                                 let subc_model = &model_map[&model.subcircuits[j].model];
                                 let circuit_mapping = &subc_model.circuit.as_ref().unwrap().1;
-                                let output_count = circuit_mapping
-                                    .iter()
-                                    .filter(|c| matches!(c, CircuitMapping::Output(_)))
-                                    .count();
                                 let total_input_len = subc_model.inputs.len();
                                 let circ_outputs = BoolVarSys::from_circuit(
                                     subc_model.circuit.as_ref().unwrap().0.clone(),
@@ -994,7 +988,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                                                     .insert(scname.clone(), BoolVarSys::from(*v));
                                             }
                                         }
-                                        CircuitMapping::Output(ci) => {
+                                        CircuitMapping::Output(_) => {
                                             let old_out_count = out_count;
                                             out_count += 1;
                                             if let Some(scname) = sc_mapping.outputs[i].as_ref() {
