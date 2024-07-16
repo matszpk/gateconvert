@@ -58,3 +58,14 @@ pub fn assign_map_to_string(map: &[(usize, AssignEntry)]) -> String {
     }
     out
 }
+
+pub fn string_assign_map_to_string(map: &[(String, AssignEntry)]) -> String {
+    let mut out = String::new();
+    for (k, t) in map {
+        out += &k;
+        out.push(' ');
+        out += &t.to_string();
+        out.push('\n');
+    }
+    out
+}

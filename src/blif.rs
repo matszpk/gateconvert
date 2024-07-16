@@ -271,25 +271,6 @@ struct Model {
     circuit: Option<(Circuit<usize>, Vec<CircuitMapping>)>,
 }
 
-#[derive(Clone, Debug)]
-struct MappingKey {
-    model: String,
-    wire: String,
-}
-
-pub fn blif_assign_map_to_string(map: &[(MappingKey, AssignEntry)]) -> String {
-    let mut out = String::new();
-    for (k, t) in map {
-        out += &k.model;
-        out.push(':');
-        out += &k.wire;
-        out.push(' ');
-        out += &t.to_string();
-        out.push('\n');
-    }
-    out
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct GateCacheKey {
     var_num: usize,
