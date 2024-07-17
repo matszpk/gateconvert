@@ -197,7 +197,6 @@ pub(crate) fn pla_entry_from_tokens(
                     return None;
                 }
             };
-            println!("Set value: {}", set_value);
             return Some((vec![], set_value, line_no));
         } else {
             return None;
