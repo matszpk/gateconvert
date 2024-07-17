@@ -3306,4 +3306,348 @@ and(1,2):0 and(2,5):6}(6)"##
             )
         );
     }
+
+    use std::fs;
+
+    struct FilesToRemove(Vec<String>);
+
+    impl Drop for FilesToRemove {
+        fn drop(&mut self) {
+            for s in &self.0 {
+                let _ = fs::remove_file(s);
+            }
+        }
+    }
+
+    fn write_files(files: impl IntoIterator<Item = (String, String)>) -> FilesToRemove {
+        let mut files_to_remove = FilesToRemove(vec![]);
+        for (path, content) in files {
+            fs::write(&path, content.as_bytes()).unwrap();
+            files_to_remove.0.push(path.clone());
+        }
+        files_to_remove
+    }
+
+    fn parse_file_helper(files: impl IntoIterator<Item = (String, String)>) -> (ModelMap, String) {
+        let to_remove = write_files(files);
+        parse_file(&to_remove.0[0]).unwrap()
+    }
+
+    #[test]
+    fn test_parse_file() {
+        assert_eq!(
+            (
+                ModelMap::from_iter([(
+                    "simple".to_string(),
+                    Model {
+                        inputs: vec![],
+                        outputs: strs_to_vec_string(["x", "y", "z"]),
+                        latches: vec![],
+                        clocks: vec![],
+                        gates: vec![
+                            Gate {
+                                params: vec![],
+                                output: "x".to_string(),
+                                circuit: TableCircuit::Value(false),
+                            },
+                            Gate {
+                                params: vec![],
+                                output: "y".to_string(),
+                                circuit: TableCircuit::Value(true),
+                            },
+                            Gate {
+                                params: vec![],
+                                output: "z".to_string(),
+                                circuit: TableCircuit::Value(false),
+                            }
+                        ],
+                        subcircuits: vec![],
+                        circuit: None,
+                    }
+                )]),
+                "simple".to_string()
+            ),
+            parse_file_helper(strs2_to_vec_string([(
+                "xxxtop.blif",
+                r##".model simple
+.outputs x y
+.outputs z
+.names x
+.names y
+1
+.names z
+0
+.end
+"##
+            )]))
+        );
+        let exp_result = (
+            ModelMap::from_iter([
+                (
+                    "simple".to_string(),
+                    Model {
+                        inputs: strs_to_vec_string(["a", "b"]),
+                        outputs: strs_to_vec_string(["x", "y", "z"]),
+                        latches: vec![],
+                        clocks: vec![],
+                        gates: vec![],
+                        subcircuits: vec![
+                            Subcircuit {
+                                model: "and".to_string(),
+                                mappings: strs2_to_vec_string([
+                                    ("a0", "a"),
+                                    ("a1", "b"),
+                                    ("x", "x"),
+                                ]),
+                                filename: "xxxtop.blif".to_string(),
+                                line_no: 4,
+                            },
+                            Subcircuit {
+                                model: "or".to_string(),
+                                mappings: strs2_to_vec_string([
+                                    ("a0", "a"),
+                                    ("a1", "b"),
+                                    ("x", "y"),
+                                ]),
+                                filename: "xxxtop.blif".to_string(),
+                                line_no: 5,
+                            },
+                            Subcircuit {
+                                model: "xor".to_string(),
+                                mappings: strs2_to_vec_string([
+                                    ("a0", "a"),
+                                    ("a1", "b"),
+                                    ("x", "z"),
+                                ]),
+                                filename: "xxxtop.blif".to_string(),
+                                line_no: 6,
+                            },
+                        ],
+                        circuit: None,
+                    },
+                ),
+                (
+                    "and".to_string(),
+                    Model {
+                        inputs: strs_to_vec_string(["a0", "a1"]),
+                        outputs: strs_to_vec_string(["x"]),
+                        latches: vec![],
+                        clocks: vec![],
+                        gates: vec![Gate {
+                            params: strs_to_vec_string(["a0", "a1"]),
+                            output: "x".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 and(0,1):0}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        }],
+                        subcircuits: vec![],
+                        circuit: None,
+                    },
+                ),
+                (
+                    "or".to_string(),
+                    Model {
+                        inputs: strs_to_vec_string(["a0", "a1"]),
+                        outputs: strs_to_vec_string(["x"]),
+                        latches: vec![],
+                        clocks: vec![],
+                        gates: vec![Gate {
+                            params: strs_to_vec_string(["a0", "a1"]),
+                            output: "x".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 nor(0,1):0n}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        }],
+                        subcircuits: vec![],
+                        circuit: None,
+                    },
+                ),
+                (
+                    "xor".to_string(),
+                    Model {
+                        inputs: strs_to_vec_string(["a0", "a1"]),
+                        outputs: strs_to_vec_string(["x"]),
+                        latches: vec![],
+                        clocks: vec![],
+                        gates: vec![Gate {
+                            params: strs_to_vec_string(["a0", "a1"]),
+                            output: "x".to_string(),
+                            circuit: TableCircuit::Circuit((
+                                Circuit::from_str("{0 1 xor(0,1):0}(2)").unwrap(),
+                                vec![Some(0), Some(1)],
+                            )),
+                        }],
+                        subcircuits: vec![],
+                        circuit: None,
+                    },
+                ),
+            ]),
+            "simple".to_string(),
+        );
+        assert_eq!(
+            exp_result.clone(),
+            parse_file_helper(strs2_to_vec_string([
+                (
+                    "xxxtop.blif",
+                    r##".model simple
+.inputs a b
+.outputs x y z
+.subckt and a0=a a1=b x=x
+.subckt or a0=a a1=b x=y
+.subckt xor a0=a a1=b x=z
+.end
+.search xxxand.blif
+.search xxxor.blif
+.search xxxxor.blif
+"##
+                ),
+                (
+                    "xxxand.blif",
+                    r##".model and
+.input a0 a1
+.outputs x
+.names a0 a1 x
+11 1
+.end
+"##
+                ),
+                (
+                    "xxxor.blif",
+                    r##".model or
+.input a0 a1
+.outputs x
+.names a0 a1 x
+1- 1
+-1 1
+.end
+"##
+                ),
+                (
+                    "xxxxor.blif",
+                    r##".model xor
+.input a0 a1
+.outputs x
+.names a0 a1 x
+10 1
+01 1
+.end
+"##
+                ),
+            ]))
+        );
+        assert_eq!(
+            exp_result.clone(),
+            parse_file_helper(strs2_to_vec_string([
+                (
+                    "xxxtop.blif",
+                    r##".model simple
+.inputs a b
+.outputs x y z
+.subckt and a0=a a1=b x=x
+.subckt or a0=a a1=b x=y
+.subckt xor a0=a a1=b x=z
+.end
+.search xxxgates.blif
+"##
+                ),
+                (
+                    "xxxgates.blif",
+                    r##".search xxxand.blif
+.search xxxor.blif
+.search xxxxor.blif
+"##
+                ),
+                (
+                    "xxxand.blif",
+                    r##".model and
+.input a0 a1
+.outputs x
+.names a0 a1 x
+11 1
+.end
+"##
+                ),
+                (
+                    "xxxor.blif",
+                    r##".model or
+.input a0 a1
+.outputs x
+.names a0 a1 x
+1- 1
+-1 1
+.end
+"##
+                ),
+                (
+                    "xxxxor.blif",
+                    r##".model xor
+.input a0 a1
+.outputs x
+.names a0 a1 x
+10 1
+01 1
+.end
+"##
+                ),
+            ]))
+        );
+        assert_eq!(
+            exp_result.clone(),
+            parse_file_helper(strs2_to_vec_string([
+                (
+                    "xxxtop.blif",
+                    r##".model simple
+.inputs a b
+.outputs x y z
+.subckt and a0=a a1=b x=x
+.subckt or a0=a a1=b x=y
+.subckt xor a0=a a1=b x=z
+.end
+.search xxxgates.blif
+"##
+                ),
+                (
+                    "xxxgates.blif",
+                    r##".search xxxand.blif
+.search xxxor.blif
+"##
+                ),
+                (
+                    "xxxand.blif",
+                    r##".model and
+.input a0 a1
+.outputs x
+.names a0 a1 x
+11 1
+.end
+"##
+                ),
+                (
+                    "xxxor.blif",
+                    r##".model or
+.input a0 a1
+.outputs x
+.names a0 a1 x
+1- 1
+-1 1
+.end
+.search xxxxor.blif
+"##
+                ),
+                (
+                    "xxxxor.blif",
+                    r##".model xor
+.input a0 a1
+.outputs x
+.names a0 a1 x
+10 1
+01 1
+.end
+"##
+                ),
+            ]))
+        );
+    }
 }
