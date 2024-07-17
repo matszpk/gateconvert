@@ -3649,5 +3649,66 @@ and(1,2):0 and(2,5):6}(6)"##
                 ),
             ]))
         );
+        assert_eq!(
+            exp_result.clone(),
+            parse_file_helper(strs2_to_vec_string([
+                (
+                    "xxxmain.blif",
+                    r##".search xxxtop.blif
+.search xxxgates.blif
+"##
+                ),
+                (
+                    "xxxtop.blif",
+                    r##".model simple
+.inputs a b
+.outputs x y z
+.subckt and a0=a a1=b x=x
+.subckt or a0=a a1=b x=y
+.subckt xor a0=a a1=b x=z
+.end
+"##
+                ),
+                (
+                    "xxxgates.blif",
+                    r##".search xxxand.blif
+.search xxxor.blif
+"##
+                ),
+                (
+                    "xxxand.blif",
+                    r##".model and
+.input a0 a1
+.outputs x
+.names a0 a1 x
+11 1
+.end
+"##
+                ),
+                (
+                    "xxxor.blif",
+                    r##".model or
+.input a0 a1
+.outputs x
+.names a0 a1 x
+1- 1
+-1 1
+.end
+.search xxxxor.blif
+"##
+                ),
+                (
+                    "xxxxor.blif",
+                    r##".model xor
+.input a0 a1
+.outputs x
+.names a0 a1 x
+10 1
+01 1
+.end
+"##
+                ),
+            ]))
+        );
     }
 }
