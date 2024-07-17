@@ -234,6 +234,8 @@ enum BLIFError {
     ModelHaveClocks(String, usize),
     #[error("Cycle in model {0} caused by {1}")]
     CycleInModel(String, String),
+    #[error("Cycle in model hierarchy caused by {0}")]
+    CycleInModelHierarchy(String),
 }
 
 // structures of BLIF
@@ -1294,7 +1296,38 @@ fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), B
     }
 }
 
-fn resolve_model(top: String, model_map: &mut ModelMap) {}
+fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFError> {
+    struct StackEntry {
+        model: String,
+        way: usize,
+    }
+    let mut visited = HashSet::<String>::new();
+    // path_visited - to detect cycles
+    let mut path_visited = HashSet::<String>::new();
+    let mut stack = vec![];
+    stack.push(StackEntry {
+        model: top_name.to_string(),
+        way: 0,
+    });
+    while !stack.is_empty() {
+        let top = stack.last_mut().unwrap();
+        let way = top.way;
+        let model = model_map.get(&top.model).unwrap();
+        if way == 0 {
+            if !path_visited.contains(&top.model) {
+                path_visited.insert(top.model.clone());
+            } else {
+                return Err(BLIFError::CycleInModelHierarchy(top.model.clone()));
+            }
+        }
+        if way < model.subcircuits.len() {
+        } else {
+            path_visited.remove(&top.model);
+            stack.pop();
+        }
+    }
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {
