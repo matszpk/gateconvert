@@ -1263,7 +1263,7 @@ fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), B
                     path: line[1].clone(),
                     reader: BLIFTokensReader::<File>::new(File::open(&line[1])?),
                 });
-                break 'a; // to main loop at stack
+                continue 'a; // to main loop at stack
             } else {
                 // undo reading last tokens
                 top.reader.unread_tokens();
