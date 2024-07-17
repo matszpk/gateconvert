@@ -359,7 +359,7 @@ impl Model {
                     }),
             )
             .collect::<Vec<_>>();
-        // circuit_output_trans: index - new index, value - old index
+        // circuit_output_trans_rev: index - new index, value - old index
         let circuit_output_trans_rev = state_mapping
             .iter()
             .filter_map(|(model_output_idx, _)| circuit_mapping_indexes[*model_output_idx])
