@@ -173,6 +173,8 @@ enum BLIFError {
     IOError(#[from] io::Error),
     #[error("{0}:{1}: Expected .model")]
     NoModel(String, usize),
+    #[error("{0}: Expected .end")]
+    NoModelEnd(String),
     #[error("{0}:{1}: Expected model name")]
     NoModelName(String, usize),
     #[error("Model {0} without outputs")]
@@ -478,6 +480,7 @@ fn parse_model<R: Read>(
     let mut model_output_set = HashSet::new();
     let mut after_model_decls = false;
     let mut all_outputs = HashSet::new();
+    let mut have_end = false;
     while let Some((line_no, line)) = reader.read_tokens()? {
         match line[0].as_str() {
             ".names" => {
@@ -705,6 +708,7 @@ fn parse_model<R: Read>(
                 return Err(BLIFError::UnsupportedGate(filename.to_string(), line_no));
             }
             ".end" => {
+                have_end = true;
                 break;
             }
             _ => {
@@ -715,6 +719,9 @@ fn parse_model<R: Read>(
                 );
             }
         }
+    }
+    if !have_end {
+        return Err(BLIFError::NoModelEnd(filename.to_string()));
     }
     if model.outputs.is_empty() {
         return Err(BLIFError::ModelWithoutOutputs(model_name.clone()));
@@ -1818,6 +1825,17 @@ x1 1
 .names c d x
 01 1
 .end
+"##
+            )
+        );
+        assert_eq!(
+            Err("top.blif: Expected .end".to_string()),
+            parse_model_helper(
+                r##".model test1
+.inputs a b
+.outputs x
+.names a b x
+01 1
 "##
             )
         );
