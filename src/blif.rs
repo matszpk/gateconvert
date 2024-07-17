@@ -2973,5 +2973,68 @@ nor(3,0) nimpl(9,4):2n and(0,4) and(11,1):3}(5)"##
 "##
             )
         );
+        assert_eq!(
+            (
+                Circuit::from_str("{0 1 2 3 4 and(2,3) and(5,0):0 and(0,4) and(7,1):1}(5)")
+                    .unwrap(),
+                strt_to_vec_string([
+                    ("a0", AssignEntry::Var(2, false)),
+                    ("a1", AssignEntry::Var(3, false)),
+                    ("a3", AssignEntry::Var(4, false)),
+                    ("a2", AssignEntry::Var(0, false)),
+                    ("a4", AssignEntry::Var(1, false)),
+                    ("x0", AssignEntry::Var(6, false)),
+                    ("x1", AssignEntry::Value(false)),
+                    ("x2", AssignEntry::Value(true)),
+                    ("x3", AssignEntry::Var(8, false)),
+                ])
+            ),
+            model_top_mapping_helper(
+                r##".model simple
+.input a0 a1 a3
+.clock a2 a4
+.outputs x0 x1 x2 x3
+.names a0 a1 a2 x0
+111 1
+.names x1
+.names x2
+1
+.names a2 a3 a4 x3
+111 1
+.end
+"##
+            )
+        );
+        assert_eq!(
+            (
+                Circuit::from_str("{0 1 2 and(1,2) and(3,0):0 nor(1,2) nimpl(5,0):1n}(3)").unwrap(),
+                strt_to_vec_string([
+                    ("a0", AssignEntry::Var(1, false)),
+                    ("a1", AssignEntry::Var(2, false)),
+                    ("a3", AssignEntry::NoMap),
+                    ("a2", AssignEntry::NoMap),
+                    ("a4", AssignEntry::Var(0, false)),
+                    ("x0", AssignEntry::Var(4, false)),
+                    ("x1", AssignEntry::Value(false)),
+                    ("x2", AssignEntry::Value(true)),
+                    ("x3", AssignEntry::Var(6, true)),
+                ])
+            ),
+            model_top_mapping_helper(
+                r##".model simple
+.input a0 a1 a3
+.clock a2 a4
+.outputs x0 x1 x2 x3
+.names a0 a1 a4 x0
+111 1
+.names x1
+.names x2
+1
+.names a0 a1 a4 x3
+000 0
+.end
+"##
+            )
+        );
     }
 }
