@@ -7,7 +7,10 @@ use gateutil::{reverse_trans, translate_inputs, translate_outputs};
 use crate::blif_pla::*;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fmt::Display;
+use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
+use std::path::Path;
 
 pub fn to_blif(
     circuit: &Circuit<usize>,
@@ -171,6 +174,10 @@ impl<R: Read> BLIFTokensReader<R> {
 enum BLIFError {
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
+    #[error("No models in BLIF")]
+    NoModels,
+    #[error("Too big depth of '.search'")]
+    TooBigSearchDepth,
     #[error("{0}:{1}: Expected .model")]
     NoModel(String, usize),
     #[error("{0}: Expected .end")]
@@ -181,8 +188,8 @@ enum BLIFError {
     ModelWithoutOutputs(String),
     #[error("{0}:{1}: Model declarations in model commands")]
     ModelDeclsInCommands(String, usize),
-    #[error("{0}:{1}: Name {2} of model already used")]
-    ModelNameUsed(String, usize, String),
+    #[error("Name {0} of model already used")]
+    ModelNameUsed(String),
     #[error("{0}:{1}: Model with name {2} is undefined")]
     UnknownModel(String, usize, String),
     #[error("{0}:{1}: Too few parameters")]
@@ -1228,6 +1235,63 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     let model = model_map.get_mut(&model_name).unwrap();
     model.circuit = Some((circuit, circuit_mapping));
     Ok(())
+}
+
+fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), BLIFError> {
+    let mut circuit_cache = CircuitCache::new();
+    let mut gate_cache = GateCache::new();
+    let mut model_map = ModelMap::new();
+    struct Stack {
+        path: String,
+        reader: BLIFTokensReader<File>,
+    }
+    let mut stack = vec![];
+    let mut first_model = None;
+    stack.push(Stack {
+        path: path.to_string(),
+        reader: BLIFTokensReader::<File>::new(File::open(path)?),
+    });
+
+    'a: while !stack.is_empty() {
+        if stack.len() >= 100 {
+            return Err(BLIFError::TooBigSearchDepth);
+        }
+        let top = stack.last_mut().unwrap();
+        while let Some((_, line)) = top.reader.read_tokens()? {
+            if line[0] == ".search" {
+                stack.push(Stack {
+                    path: line[1].clone(),
+                    reader: BLIFTokensReader::<File>::new(File::open(&line[1])?),
+                });
+                break 'a; // to main loop at stack
+            } else {
+                // undo reading last tokens
+                top.reader.unread_tokens();
+                let (name, model) = parse_model(
+                    &top.path,
+                    &mut top.reader,
+                    &mut circuit_cache,
+                    &mut gate_cache,
+                )?;
+                if first_model.is_none() {
+                    first_model = Some(name.clone());
+                }
+                if !model_map.contains_key(&name) {
+                    model_map.insert(name.clone(), model);
+                } else {
+                    return Err(BLIFError::ModelNameUsed(name.clone()));
+                }
+            }
+        }
+        // if end of current file then pop stack
+        stack.pop();
+    }
+
+    if let Some(first_model) = first_model {
+        Ok((model_map, first_model))
+    } else {
+        Err(BLIFError::NoModels)
+    }
 }
 
 fn resolve_model(top: String, model_map: &mut ModelMap) {}
