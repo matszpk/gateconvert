@@ -1155,7 +1155,6 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             HashSet::<String>::from_iter(model.latches.iter().map(|(s, _)| s.clone()));
         let latch_outputs =
             HashSet::<String>::from_iter(model.latches.iter().map(|(_, s)| s.clone()));
-        // TODO: add ordering latches as last in input and output
         let outputs = UDynVarSys::from_iter(model.outputs.iter().map(|s| boolvar_map[s].clone()));
         let (circuit, input_map) = outputs.to_translated_circuit_with_map(
             model
@@ -1169,6 +1168,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         .filter_map(|s| boolvar_map.get(s).cloned()),
                 ),
         );
+        // fix input map - because some model inputs can be removed while filtering
         let input_map = {
             let mut input_map_new = vec![None; model.inputs.len() + model.clocks.len()];
             for (newi, (i, _)) in model
@@ -1183,6 +1183,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             }
             input_map_new
         };
+        // output mapping
         let circuit_out_mapping = model
             .outputs
             .iter()
@@ -1195,6 +1196,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 }
             })
             .collect::<Vec<_>>();
+        // input mapping
         let circuit_mapping = model
             .inputs
             .iter()
