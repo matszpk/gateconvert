@@ -737,8 +737,8 @@ fn parse_model<R: Read>(
     Ok((model_name, model))
 }
 
-fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(), BLIFError> {
-    let model = model_map.get(&model_name).unwrap();
+fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFError> {
+    let model = model_map.get(model_name).unwrap();
     // all subcircuit must be resolved and they must have generated circuits.
     assert!(model
         .subcircuits
@@ -803,7 +803,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
         if let Some((_, wo)) = wire_in_outs.get_mut(&g.output) {
             if wo.is_some() {
                 return Err(BLIFError::AlreadyDefinedAsOutput2(
-                    model_name.clone(),
+                    model_name.to_string(),
                     g.output.clone(),
                 ));
             } else {
@@ -924,7 +924,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                     if let Some((_, wo)) = wire_in_outs.get_mut(scout) {
                         if wo.is_some() {
                             return Err(BLIFError::AlreadyDefinedAsOutput2(
-                                model_name.clone(),
+                                model_name.to_string(),
                                 scout.clone(),
                             ));
                         } else {
@@ -950,7 +950,10 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
     // check whether name tied to some output
     for (name, (wi, wo)) in &wire_in_outs {
         if wo.is_some() && wi.is_empty() && !model_output_set.contains(name) {
-            return Err(BLIFError::UndefinedWire(model_name.clone(), name.clone()));
+            return Err(BLIFError::UndefinedWire(
+                model_name.to_string(),
+                name.clone(),
+            ));
         }
     }
 
@@ -989,7 +992,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                 });
             } else {
                 return Err(BLIFError::UndefinedWire(
-                    model_name.clone(),
+                    model_name.to_string(),
                     outname.clone(),
                 ));
             };
@@ -1015,7 +1018,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                         path_visited.insert(top.name.clone());
                     } else {
                         return Err(BLIFError::CycleInModel(
-                            model_name.clone(),
+                            model_name.to_string(),
                             top.name.clone(),
                         ));
                     }
@@ -1055,7 +1058,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
                             }
                         } else {
                             return Err(BLIFError::UndefinedWire(
-                                model_name.clone(),
+                                model_name.to_string(),
                                 top.name.clone(),
                             ));
                         };
@@ -1234,7 +1237,7 @@ fn gen_model_circuit(model_name: String, model_map: &mut ModelMap) -> Result<(),
             .collect::<Vec<_>>();
         Ok((circuit, circuit_mapping))
     })?;
-    let model = model_map.get_mut(&model_name).unwrap();
+    let model = model_map.get_mut(model_name).unwrap();
     model.circuit = Some((circuit, circuit_mapping));
     Ok(())
 }
@@ -1298,7 +1301,7 @@ fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), B
 
 fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFError> {
     struct StackEntry {
-        model: String,
+        name: String,
         way: usize,
     }
     let mut visited = HashSet::<String>::new();
@@ -1306,23 +1309,36 @@ fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFErr
     let mut path_visited = HashSet::<String>::new();
     let mut stack = vec![];
     stack.push(StackEntry {
-        model: top_name.to_string(),
+        name: top_name.to_string(),
         way: 0,
     });
     while !stack.is_empty() {
         let top = stack.last_mut().unwrap();
         let way = top.way;
-        let model = model_map.get(&top.model).unwrap();
+        let model = model_map.get(&top.name).unwrap();
         if way == 0 {
-            if !path_visited.contains(&top.model) {
-                path_visited.insert(top.model.clone());
+            if !path_visited.contains(&top.name) {
+                path_visited.insert(top.name.clone());
             } else {
-                return Err(BLIFError::CycleInModelHierarchy(top.model.clone()));
+                return Err(BLIFError::CycleInModelHierarchy(top.name.clone()));
+            }
+            if !visited.contains(&top.name) {
+                visited.insert(top.name.clone());
+            } else {
+                path_visited.remove(&top.name);
+                stack.pop();
+                continue;
             }
         }
         if way < model.subcircuits.len() {
+            top.way += 1;
+            stack.push(StackEntry {
+                name: model.subcircuits[way].model.clone(),
+                way: 0,
+            });
         } else {
-            path_visited.remove(&top.model);
+            gen_model_circuit(&top.name, model_map)?;
+            path_visited.remove(&top.name);
             stack.pop();
         }
     }
@@ -1975,9 +1991,9 @@ x1 1
                     .map_err(|e| e.to_string())
                     .unwrap();
             model_map.insert(model_name.clone(), model);
-            gen_model_circuit(model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
+            gen_model_circuit(&model_name, &mut model_map).map_err(|e| e.to_string())?;
         }
-        gen_model_circuit(main_model_name.clone(), &mut model_map).map_err(|e| e.to_string())?;
+        gen_model_circuit(&main_model_name, &mut model_map).map_err(|e| e.to_string())?;
         for g in &model_map[&main_model_name].gates {
             println!("ModelGate: {:?}", g);
         }
@@ -2967,7 +2983,7 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
                 .map_err(|e| e.to_string())
                 .unwrap();
         model_map.insert(main_model_name.clone(), main_model);
-        gen_model_circuit(main_model_name.clone(), &mut model_map)
+        gen_model_circuit(&main_model_name, &mut model_map)
             .map_err(|e| e.to_string())
             .unwrap();
         // println!("Model: {:?}", model_map[&main_model_name]);
