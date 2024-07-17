@@ -3141,5 +3141,54 @@ and(1,2):0 and(2,5):6}(6)"##
 "##
             )
         );
+        assert_eq!(
+            (
+                Circuit::from_str("{0 1 2 3 4 5 and(4,3):1 nor(3,0):2n and(1,0):0 and(2,5):3}(6)")
+                    .unwrap(),
+                strt_to_vec_string([
+                    ("a0", AssignEntry::Var(4, false)),
+                    ("a1", AssignEntry::NoMap),
+                    ("a3", AssignEntry::Var(1, false)),
+                    ("a5", AssignEntry::Var(0, false)),
+                    ("a6", AssignEntry::NoMap),
+                    ("a7", AssignEntry::Var(2, false)),
+                    ("a8", AssignEntry::Var(5, false)),
+                    ("a2", AssignEntry::Var(3, false)),
+                    ("a4", AssignEntry::NoMap),
+                    ("x0", AssignEntry::Var(6, false)),
+                    ("x1", AssignEntry::Value(true)),
+                    ("x2", AssignEntry::Var(7, true)),
+                    ("x3", AssignEntry::Var(8, false)),
+                    ("x4", AssignEntry::Value(false)),
+                    ("x5", AssignEntry::Value(true)),
+                    ("x6", AssignEntry::Var(9, false))
+                ])
+            ),
+            model_top_mapping_helper(
+                r##".model simple
+.input a0 a1 a3 a5 a6 a7 a8
+.clock a2 a4
+.outputs x0 x1 x2 x3 x4 x5 x6
+.latch x5 a1
+.latch x3 a5
+.latch x0 a3
+.latch x2 a7
+.names a0 a2 x0
+11 1
+.names x1
+1
+.names a2 a5 x2
+00 0
+.names a3 a5 x3
+11 1
+.names x4
+.names x5
+1
+.names a7 a8 x6
+11 1
+.end
+"##
+            )
+        );
     }
 }
