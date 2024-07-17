@@ -362,9 +362,7 @@ impl Model {
         // circuit_output_trans: index - new index, value - old index
         let circuit_output_trans_rev = state_mapping
             .iter()
-            .filter_map(|(model_output_idx, _)| {
-                circuit_mapping_indexes[model_input_len + model_clock_len + *model_output_idx]
-            })
+            .filter_map(|(model_output_idx, _)| circuit_mapping_indexes[*model_output_idx])
             .chain(
                 // outputs (not states)
                 circuit_mapping_indexes[model_input_len + model_clock_len..]
@@ -380,7 +378,6 @@ impl Model {
             )
             .collect::<Vec<_>>();
         let circuit_input_trans = reverse_trans(circuit_input_trans_rev);
-        let circuit_output_trans = reverse_trans(circuit_output_trans_rev);
         // mapping
         let assign_mapping = mapping
             .into_iter()
@@ -413,7 +410,7 @@ impl Model {
             .collect::<Vec<_>>();
         // translating circuit
         let circuit = translate_inputs(circuit.clone(), &circuit_input_trans);
-        let circuit = translate_outputs(circuit, &circuit_output_trans);
+        let circuit = translate_outputs(circuit, &circuit_output_trans_rev);
         (circuit, assign_mapping)
     }
 }
@@ -2875,7 +2872,9 @@ and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
             .map_err(|e| e.to_string())
             .unwrap();
         // println!("Model: {:?}", model_map[&main_model_name]);
-        model_map[&main_model_name].clone().top_mapping()
+        let (c, m) = model_map[&main_model_name].clone().top_mapping();
+        println!("Circuit: {}", c);
+        (c, m)
     }
 
     #[test]
@@ -3036,51 +3035,58 @@ nor(3,0) nimpl(9,4):2n and(0,4) and(11,1):3}(5)"##
 "##
             )
         );
-//         assert_eq!(
-//             (
-//                 Circuit::from_str(
-//                     r##"{0 1 2 3 4 and(2,3) and(5,0):0 nor(2,0) nimpl(7,4):1n
-// nor(3,0) nimpl(9,4):2n and(0,4) and(11,1):3}(5)"##
-//                 )
-//                 .unwrap(),
-//                 strt_to_vec_string([
-//                     ("a0", AssignEntry::Var(2, false)),
-//                     ("a1", AssignEntry::Var(3, false)),
-//                     ("a3", AssignEntry::Var(4, false)),
-//                     ("a2", AssignEntry::Var(0, false)),
-//                     ("a4", AssignEntry::Var(1, false)),
-//                     ("x0", AssignEntry::Var(6, false)),
-//                     ("x1", AssignEntry::Var(8, true)),
-//                     ("x2", AssignEntry::Var(10, true)),
-//                     ("x3", AssignEntry::Var(12, false)),
-//                 ])
-//             ),
-//             model_top_mapping_helper(
-//                 r##".model simple
-// .input a0 a1 a3 a5 a6 a7 a8
-// .clock a2 a4
-// .outputs x0 x1 x2 x3 x4 x5 x6
-// .latch x5 a1
-// .latch x3 a5
-// .latch x0 a3
-// .latch x2 a7
-// .names a0 a1 x0
-// 11 1
-// .names a1 a2 x1
-// 00 0
-// .names a2 a3 x2
-// 00 0
-// .names a3 a4 x3
-// 11 1
-// .names a4 a5 x4
-// 00 0
-// .names a5 a6 x5
-// 11 1
-// .names a7 a8 x6
-// 11 1
-// .end
-// "##
-//             )
-//         );
+        assert_eq!(
+            (
+                Circuit::from_str(
+                    r##"{0 1 2 3 4 5 6 7 8 and(6,0):2 nor(0,4):4n nor(4,2):3n and(2,5):1
+nor(5,1):5n and(1,7):0 and(3,8):6}(9)"##
+                )
+                .unwrap(),
+                strt_to_vec_string([
+                    ("a0", AssignEntry::Var(6, false)),
+                    ("a1", AssignEntry::Var(0, false)),
+                    ("a3", AssignEntry::Var(2, false)),
+                    ("a5", AssignEntry::Var(1, false)),
+                    ("a6", AssignEntry::Var(7, false)),
+                    ("a7", AssignEntry::Var(3, false)),
+                    ("a8", AssignEntry::Var(8, false)),
+                    ("a2", AssignEntry::Var(4, false)),
+                    ("a4", AssignEntry::Var(5, false)),
+                    ("x0", AssignEntry::Var(9, false)),
+                    ("x1", AssignEntry::Var(10, true)),
+                    ("x2", AssignEntry::Var(11, true)),
+                    ("x3", AssignEntry::Var(12, false)),
+                    ("x4", AssignEntry::Var(13, true)),
+                    ("x5", AssignEntry::Var(14, false)),
+                    ("x6", AssignEntry::Var(15, false))
+                ])
+            ),
+            model_top_mapping_helper(
+                r##".model simple
+.input a0 a1 a3 a5 a6 a7 a8
+.clock a2 a4
+.outputs x0 x1 x2 x3 x4 x5 x6
+.latch x5 a1
+.latch x3 a5
+.latch x0 a3
+.latch x2 a7
+.names a0 a1 x0
+11 1
+.names a1 a2 x1
+00 0
+.names a2 a3 x2
+00 0
+.names a3 a4 x3
+11 1
+.names a4 a5 x4
+00 0
+.names a5 a6 x5
+11 1
+.names a7 a8 x6
+11 1
+.end
+"##
+            )
+        );
     }
 }
