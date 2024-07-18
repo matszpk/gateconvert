@@ -212,7 +212,7 @@ fn main() {
             btor2::to_btor2(circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
         }
         Commands::FromBLIF(from_blif) => {
-            let (circuit, map) = { blif::from_blif(from_blif.blif).unwrap() };
+            let (circuit, map) = blif::from_blif(from_blif.blif).unwrap();
             fs::write(
                 from_blif.circuit,
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
