@@ -320,7 +320,6 @@ pub(crate) fn gen_pla_circuit_with_two_methods(
     pla: &[(Vec<PLACell>, bool, usize)],
 ) -> TableCircuit {
     if var_num <= 4 {
-        // println!("Smaller than 4 vars");
         let table = pla_to_truth_table(var_num, set_value, pla);
         gen_booltable_circuit_by_xor_table(cache, &table)
     } else if var_num >= usize::BITS as usize - 1 {
