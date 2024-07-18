@@ -1332,6 +1332,13 @@ fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFErr
         }
         if way < model.subcircuits.len() {
             top.way += 1;
+            if !model_map.contains_key(&model.subcircuits[way].model) {
+                return Err(BLIFError::UnknownModel(
+                    model.subcircuits[way].filename.clone(),
+                    model.subcircuits[way].line_no,
+                    model.subcircuits[way].model.clone(),
+                ));
+            }
             stack.push(StackEntry {
                 name: model.subcircuits[way].model.clone(),
                 way: 0,
@@ -3758,6 +3765,197 @@ and(1,2):0 and(2,5):6}(6)"##
 "##
                 ),
             ]))
+        );
+    }
+
+    fn resolve_model_helper(text: &str, model_num: usize) -> Result<CircuitData, String> {
+        println!("ModelStart:");
+        let mut circuit_cache = CircuitCache::new();
+        let mut gate_cache = GateCache::new();
+        let mut model_map = ModelMap::new();
+        let mut bytes = BLIFTokensReader::new(text.as_bytes());
+        let (main_model_name, main_model) =
+            parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
+                .map_err(|e| e.to_string())
+                .unwrap();
+        model_map.insert(main_model_name.clone(), main_model);
+        for _ in 0..model_num {
+            let (model_name, model) =
+                parse_model("top.blif", &mut bytes, &mut circuit_cache, &mut gate_cache)
+                    .map_err(|e| e.to_string())
+                    .unwrap();
+            model_map.insert(model_name.clone(), model);
+        }
+        resolve_model(&main_model_name, &mut model_map).map_err(|e| e.to_string())?;
+        for g in &model_map[&main_model_name].gates {
+            println!("ModelGate: {:?}", g);
+        }
+        Ok(CircuitData::from(model_map[&main_model_name].clone()))
+    }
+
+    #[test]
+    fn test_resolve_model() {
+        use CircuitMapping::*;
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: vec![],
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y", "z"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::new(0, [], []).unwrap(),
+                    vec![Value(false), Value(true), Value(false)]
+                )
+            }),
+            resolve_model_helper(
+                r##".model simple
+.outputs x y
+.outputs z
+.names x
+.names y
+1
+.names z
+0
+.end
+"##,
+                0
+            )
+        );
+        // subcircuits 5
+        assert_eq!(
+            Ok(CircuitData {
+                inputs: strs_to_vec_string(["a", "b", "c", "d", "e", "f", "g", "h"]),
+                clocks: vec![],
+                outputs: strs_to_vec_string(["x", "y", "z", "w"]),
+                latches: vec![],
+                circuit: (
+                    Circuit::from_str(
+                        r##"{0 1 2 3 4 5 6 7 nor(0,2) xor(1,3) and(8,9) nor(2,4)
+xor(3,5) and(11,12) nor(4,6) xor(5,7) and(14,15) nor(13,16) and(10,17):0 nor(0,1) xor(2,3)
+and(19,20) nor(4,5) xor(6,7) and(22,23) and(21,24) nor(2,3) xor(4,5) and(26,27) nimpl(25,28):1
+and(10,13) and(16,30):2 nor(21,28) and(24,32):3}(8)"##
+                    )
+                    .unwrap(),
+                    vec![
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Input(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                        Output(false),
+                    ]
+                )
+            }),
+            resolve_model_helper(
+                r##".model simple
+.inputs a b c d e f g h
+.outputs x y z w
+.subckt mpx4 m=a n=b o=c p=d y0=t0 y1=t3
+.subckt mpx4 m=c n=d o=e p=f y0=t1 y1=t4
+.subckt mpx4 m=e n=f o=g p=h y0=t2 y1=t5
+.names t0 t1 t2 x
+100 1
+.names t3 t4 t5 y
+101 1
+.names t0 t1 t2 z
+111 1
+.names t3 t4 t5 w
+001 1
+.end
+.model mpx4
+.inputs m n o p
+.outputs y0 y1
+.names m n o p y0
+0100 1
+0001 1
+.names m n o p y1
+0010 1
+0001 1
+.end
+"##,
+                1
+            )
+        );
+        assert_eq!(
+            Err("Cycle in model hierarchy caused by mpx4".to_string()),
+            resolve_model_helper(
+                r##".model simple
+.inputs a b c d e f g h
+.outputs x y z w
+.subckt mpx4 m=a n=b o=c p=d y0=t0 y1=t3
+.subckt mpx4 m=c n=d o=e p=f y0=t1 y1=t4
+.subckt mpx4 m=e n=f o=g p=h y0=t2 y1=t5
+.names t0 t1 t2 x
+100 1
+.names t3 t4 t5 y
+101 1
+.names t0 t1 t2 z
+111 1
+.names t3 t4 t5 w
+001 1
+.end
+.model mpx4
+.inputs m n o p
+.outputs y0 y1
+.names m n o p y0
+0100 1
+0001 1
+.names m n o p t0
+0010 1
+0001 1
+.subckt mpx5 m=m n=n o=o p=p y0=t1
+.names t0 t1 y1
+11 1
+.end
+.model mpx5
+.inputs m n o p
+.outputs y0 y1
+.subckt mpx4 m=m n=n o=o p=p y0=y0 y1=y1
+.end
+"##,
+                2
+            )
+        );
+        assert_eq!(
+            Err("top.blif:25: Model with name mpx5 is undefined".to_string()),
+            resolve_model_helper(
+                r##".model simple
+.inputs a b c d e f g h
+.outputs x y z w
+.subckt mpx4 m=a n=b o=c p=d y0=t0 y1=t3
+.subckt mpx4 m=c n=d o=e p=f y0=t1 y1=t4
+.subckt mpx4 m=e n=f o=g p=h y0=t2 y1=t5
+.names t0 t1 t2 x
+100 1
+.names t3 t4 t5 y
+101 1
+.names t0 t1 t2 z
+111 1
+.names t3 t4 t5 w
+001 1
+.end
+.model mpx4
+.inputs m n o p
+.outputs y0 y1
+.names m n o p y0
+0100 1
+0001 1
+.names m n o p t0
+0010 1
+0001 1
+.subckt mpx5 m=m n=n o=o p=p y0=t1
+.names t0 t1 y1
+11 1
+.end
+"##,
+                1
+            )
         );
     }
 }
