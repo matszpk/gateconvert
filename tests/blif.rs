@@ -1,5 +1,8 @@
 use gateconvert::blif;
+use gateconvert::AssignEntry;
 use gatesim::*;
+
+use std::fs;
 
 fn to_blif_helper(circuit: Circuit<usize>, state_len: usize, clock_num: usize) -> String {
     let mut out = vec![];
@@ -534,5 +537,122 @@ fn test_to_blif() {
             2
         )
         .as_str()
+    );
+}
+
+fn strs2_to_vec_string<'a>(
+    iter: impl IntoIterator<Item = (&'a str, &'a str)>,
+) -> Vec<(String, String)> {
+    iter.into_iter()
+        .map(|(s1, s2)| (s1.to_string(), s2.to_string()))
+        .collect()
+}
+
+struct FilesToRemove(Vec<String>);
+
+impl Drop for FilesToRemove {
+    fn drop(&mut self) {
+        for s in &self.0 {
+            let _ = fs::remove_file(s);
+        }
+    }
+}
+
+fn write_files(files: impl IntoIterator<Item = (String, String)>) -> FilesToRemove {
+    let mut files_to_remove = FilesToRemove(vec![]);
+    for (path, content) in files {
+        fs::write(&path, content.as_bytes()).unwrap();
+        files_to_remove.0.push(path.clone());
+    }
+    files_to_remove
+}
+
+fn from_blif_helper(
+    files: impl IntoIterator<Item = (String, String)>,
+) -> (Circuit<usize>, Vec<(String, AssignEntry)>) {
+    let to_remove = write_files(files);
+    blif::from_blif(&to_remove.0[0]).unwrap()
+}
+
+#[test]
+fn test_from_blif() {
+    assert_eq!(
+        (
+            Circuit::<usize>::new(
+                2,
+                [
+                    Gate::new_and(0, 1),
+                    Gate::new_nor(0, 1),
+                    Gate::new_xor(0, 1),
+                ],
+                [(2, false), (3, true), (4, false)]
+            )
+            .unwrap(),
+            vec![
+                ("a".to_string(), AssignEntry::Var(0, false)),
+                ("b".to_string(), AssignEntry::Var(1, false)),
+                ("x".to_string(), AssignEntry::Var(2, false)),
+                ("y".to_string(), AssignEntry::Var(3, true)),
+                ("z".to_string(), AssignEntry::Var(4, false)),
+            ]
+        ),
+        from_blif_helper(strs2_to_vec_string([
+            (
+                "xxxmain2.blif",
+                r##".search xxxtop2.blif
+.search xxxgates2.blif
+"##
+            ),
+            (
+                "xxxtop2.blif",
+                r##".model simple
+.inputs a b
+.outputs x y z
+.subckt and a0=a a1=b x=x
+.subckt or a0=a a1=b x=y
+.subckt xor a0=a a1=b x=z
+.end
+"##
+            ),
+            (
+                "xxxgates2.blif",
+                r##".search xxxand2.blif
+.search xxxor2.blif
+"##
+            ),
+            (
+                "xxxand2.blif",
+                r##".model and
+.input a0 a1
+.outputs x
+.names a0 a1 x
+11 1
+.end
+"##
+            ),
+            (
+                "xxxor2.blif",
+                r##".model or
+.input a0 a1
+.outputs x
+.names a0 a1 x
+1- 1
+-1 1
+.end
+.search xxxxor2.blif
+"##
+            ),
+            (
+                "xxxxor2.blif",
+                r##".model xor
+.input a0 a1
+.outputs x
+.names a0 a1 x
+10 1
+01 1
+.end
+"##
+            ),
+        ]))
     );
 }
