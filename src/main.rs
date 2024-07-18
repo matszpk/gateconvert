@@ -69,6 +69,16 @@ struct ToBTOR2 {
 }
 
 #[derive(Parser)]
+struct FromBLIF {
+    #[clap(help = "Set BLIF filename")]
+    blif: PathBuf,
+    #[clap(help = "Set output circuit filename")]
+    circuit: PathBuf,
+    #[clap(help = "Set output BLIF map filename")]
+    blif_map: Option<PathBuf>,
+}
+
+#[derive(Parser)]
 struct ToBLIF {
     #[clap(help = "Set circuit filename")]
     circuit: PathBuf,
@@ -120,6 +130,8 @@ enum Commands {
     ToAIGER(ToAIGER),
     #[clap(about = "Convert to BTOR2")]
     ToBTOR2(ToBTOR2),
+    #[clap(about = "Convert from BLIF")]
+    FromBLIF(FromBLIF),
     #[clap(about = "Convert to BLIF")]
     ToBLIF(ToBLIF),
     #[clap(about = "Convert to Verilog")]
@@ -198,6 +210,17 @@ fn main() {
                 Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit).unwrap()).unwrap();
             let mut file = File::create(to_btor2.btor2).unwrap();
             btor2::to_btor2(circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
+        }
+        Commands::FromBLIF(from_blif) => {
+            let (circuit, map) = { blif::from_blif(from_blif.blif).unwrap() };
+            fs::write(
+                from_blif.circuit,
+                FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
+            )
+            .unwrap();
+            if let Some(map_name) = from_blif.blif_map {
+                fs::write(map_name, string_assign_map_to_string(&map)).unwrap();
+            }
         }
         Commands::ToBLIF(to_blif) => {
             let circuit =

@@ -84,6 +84,7 @@ where
 // RESULT=A5,A5=XB0^XA4^XA5,XB0=XA0^XA1,XA5=XB0^XA4^A5
 // RESULT=A6,A6=XC0^XA4^XA6,XC0=XA0^XA2,XA6=XC0^XA4^A6
 // RESULT=A7,A7=XC0^XB4^XA6^XA7,XC0=XB0^XB2,XB2=XA2^XA3,XB4=XA4^XA5,XA7=XC0^XB4^XA6^A7
+#[allow(dead_code)]
 pub fn dynint_extend_prep_xor_table<T, I, const SIGN: bool>(
     out: &mut Vec<DynIntExprNode<T, SIGN>>,
     temp_out: &mut Vec<Vec<DynIntExprNode<T, SIGN>>>,
@@ -211,7 +212,7 @@ pub fn gen_table_circuit_bool_prep(
 mod tests {
     use super::*;
 
-    use gategen::generic_array::typenum::*;
+    // use gategen::generic_array::typenum::*;
     use gateutil::*;
 
     fn gen_table_circuit(output_len: usize, table: Vec<u64>) -> Circuit<usize> {
@@ -253,6 +254,7 @@ mod tests {
         0x16,
     ];
 
+    #[allow(dead_code)]
     fn hash_function_64(bits: usize, value: u64) -> usize {
         let mask = u64::try_from((1u128 << bits) - 1).unwrap();
         let half_bits = bits >> 1;

@@ -7,7 +7,7 @@ use gateutil::{reverse_trans, translate_inputs, translate_outputs};
 use crate::blif_pla::*;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fmt::Display;
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::Path;
@@ -171,7 +171,7 @@ impl<R: Read> BLIFTokensReader<R> {
 
 // error
 #[derive(thiserror::Error, Debug)]
-enum BLIFError {
+pub enum BLIFError {
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
     #[error("No models in BLIF")]
@@ -1242,7 +1242,7 @@ fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), B
     Ok(())
 }
 
-fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), BLIFError> {
+fn parse_file<P: AsRef<Path> + Debug>(path: P) -> Result<(ModelMap, String), BLIFError> {
     let mut circuit_cache = CircuitCache::new();
     let mut gate_cache = GateCache::new();
     let mut model_map = ModelMap::new();
@@ -1253,7 +1253,7 @@ fn parse_file<P: AsRef<Path> + Display>(path: P) -> Result<(ModelMap, String), B
     let mut stack = vec![];
     let mut first_model = None;
     stack.push(Stack {
-        path: path.to_string(),
+        path: path.as_ref().to_str().unwrap().to_string(),
         reader: BLIFTokensReader::<File>::new(File::open(path)?),
     });
 
@@ -1350,6 +1350,14 @@ fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFErr
         }
     }
     Ok(())
+}
+
+pub fn from_blif<P: AsRef<Path> + Debug>(
+    path: P,
+) -> Result<(Circuit<usize>, Vec<(String, AssignEntry)>), BLIFError> {
+    let (mut model_map, model_name) = parse_file(path)?;
+    resolve_model(&model_name, &mut model_map)?;
+    Ok(model_map.remove(&model_name).unwrap().top_mapping())
 }
 
 #[cfg(test)]
