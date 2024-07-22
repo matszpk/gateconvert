@@ -744,8 +744,8 @@ fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), B
     enum InputNode {
         ModelInput(usize),
         ModelClock(usize),
-        Gate(usize, usize),       // gate index, parameter index
-        Subcircuit(usize, usize), // subcircuit index, input index
+        Gate,
+        Subcircuit,
     }
     #[derive(Clone, Debug)]
     enum OutputNode {
@@ -789,11 +789,11 @@ fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), B
     }
     // resolve gate inputs and outputs
     for (i, g) in model.gates.iter().enumerate() {
-        for (gini, gin) in g.params.iter().enumerate() {
+        for gin in &g.params {
             if let Some((wi, _)) = wire_in_outs.get_mut(gin) {
-                wi.push(InputNode::Gate(i, gini));
+                wi.push(InputNode::Gate);
             } else {
-                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate(i, gini)], None));
+                wire_in_outs.insert(gin.clone(), (vec![InputNode::Gate], None));
             }
         }
         if let Some((_, wo)) = wire_in_outs.get_mut(&g.output) {
@@ -905,13 +905,13 @@ fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), B
                 }
             }
             // register connections
-            for (scini, scin) in sc_mapping.inputs.iter().enumerate() {
+            for scin in &sc_mapping.inputs {
                 if let Some(scin) = scin.as_ref() {
                     if let Some((wi, _)) = wire_in_outs.get_mut(scin) {
-                        wi.push(InputNode::Subcircuit(i, scini));
+                        wi.push(InputNode::Subcircuit);
                     } else {
                         wire_in_outs
-                            .insert(scin.clone(), (vec![InputNode::Subcircuit(i, scini)], None));
+                            .insert(scin.clone(), (vec![InputNode::Subcircuit], None));
                     }
                 }
             }
