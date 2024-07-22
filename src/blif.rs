@@ -910,8 +910,7 @@ fn gen_model_circuit(model_name: &str, model_map: &mut ModelMap) -> Result<(), B
                     if let Some((wi, _)) = wire_in_outs.get_mut(scin) {
                         wi.push(InputNode::Subcircuit);
                     } else {
-                        wire_in_outs
-                            .insert(scin.clone(), (vec![InputNode::Subcircuit], None));
+                        wire_in_outs.insert(scin.clone(), (vec![InputNode::Subcircuit], None));
                     }
                 }
             }
