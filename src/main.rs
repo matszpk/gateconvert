@@ -154,111 +154,99 @@ fn aiger_file_ext_binary_mode(name: impl AsRef<Path>, binary: bool) -> bool {
     }
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
         Commands::FromCNF(from_cnf) => {
             let (circuit, map) = {
-                let mut cnf_file = File::open(from_cnf.cnf).unwrap();
-                cnf::from_cnf(&mut cnf_file).unwrap()
+                let mut cnf_file = File::open(from_cnf.cnf)?;
+                cnf::from_cnf(&mut cnf_file)?
             };
             fs::write(
                 from_cnf.circuit,
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
-            )
-            .unwrap();
+            )?;
             if let Some(map_name) = from_cnf.assign_map {
-                fs::write(map_name, map_to_string(&map)).unwrap();
+                fs::write(map_name, map_to_string(&map))?;
             }
         }
         Commands::ToCNF(to_cnf) => {
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_cnf.cnf).unwrap();
-            cnf::to_cnf(&circuit, &mut file).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_cnf.circuit)?)?;
+            let mut file = File::create(to_cnf.cnf)?;
+            cnf::to_cnf(&circuit, &mut file)?;
         }
         Commands::FromAIGER(from_aig) => {
             let binary = aiger_file_ext_binary_mode(&from_aig.aiger, from_aig.binary);
             let (circuit, map) = {
-                let mut cnf_file = File::open(from_aig.aiger).unwrap();
-                aiger::from_aiger(&mut cnf_file, binary).unwrap()
+                let mut cnf_file = File::open(from_aig.aiger)?;
+                aiger::from_aiger(&mut cnf_file, binary)?
             };
             fs::write(
                 from_aig.circuit,
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
-            )
-            .unwrap();
+            )?;
             if let Some(map_name) = from_aig.aiger_map {
-                fs::write(map_name, assign_map_to_string(&map)).unwrap();
+                fs::write(map_name, assign_map_to_string(&map))?;
             }
         }
         Commands::ToAIGER(to_aig) => {
             let binary = aiger_file_ext_binary_mode(&to_aig.aiger, to_aig.binary);
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_aig.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_aig.aiger).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_aig.circuit)?)?;
+            let mut file = File::create(to_aig.aiger)?;
             aiger::to_aiger(
                 &circuit,
                 to_aig.state_len.unwrap_or_default(),
                 &mut file,
                 binary,
-            )
-            .unwrap();
+            )?;
         }
         Commands::ToBTOR2(to_btor2) => {
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_btor2.btor2).unwrap();
-            btor2::to_btor2(circuit, to_btor2.state_len.unwrap_or_default(), &mut file).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_btor2.circuit)?)?;
+            let mut file = File::create(to_btor2.btor2)?;
+            btor2::to_btor2(circuit, to_btor2.state_len.unwrap_or_default(), &mut file)?;
         }
         Commands::FromBLIF(from_blif) => {
-            let (circuit, map) = blif::from_blif(from_blif.blif).unwrap();
+            let (circuit, map) = blif::from_blif(from_blif.blif)?;
             fs::write(
                 from_blif.circuit,
                 FmtLiner::new(&circuit, 4, 8).to_string().as_bytes(),
-            )
-            .unwrap();
+            )?;
             if let Some(map_name) = from_blif.blif_map {
-                fs::write(map_name, string_assign_map_to_string(&map)).unwrap();
+                fs::write(map_name, string_assign_map_to_string(&map))?;
             }
         }
         Commands::ToBLIF(to_blif) => {
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_blif.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_blif.blif).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_blif.circuit)?)?;
+            let mut file = File::create(to_blif.blif)?;
             blif::to_blif(
                 &circuit,
                 to_blif.state_len.unwrap_or_default(),
                 to_blif.clock_num.unwrap_or_default(),
                 &to_blif.model_name.unwrap_or("top".to_string()),
                 &mut file,
-            )
-            .unwrap();
+            )?;
         }
         Commands::ToVerilog(to_v) => {
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_v.verilog).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit)?)?;
+            let mut file = File::create(to_v.verilog)?;
             verilog::to_verilog(
                 circuit,
                 &to_v.module_name.unwrap_or("top".to_string()),
                 !to_v.no_optimize_negs,
                 &mut file,
-            )
-            .unwrap();
+            )?;
         }
         Commands::ToVHDL(to_v) => {
-            let circuit =
-                Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit).unwrap()).unwrap();
-            let mut file = File::create(to_v.vhdl).unwrap();
+            let circuit = Circuit::<usize>::from_str(&fs::read_to_string(to_v.circuit)?)?;
+            let mut file = File::create(to_v.vhdl)?;
             vhdl::to_vhdl(
                 circuit,
                 &to_v.entity_name.unwrap_or("top".to_string()),
                 &to_v.architecture.unwrap_or("rtl".to_string()),
                 !to_v.no_optimize_negs,
                 &mut file,
-            )
-            .unwrap();
+            )?;
         }
     }
+    Ok(())
 }
