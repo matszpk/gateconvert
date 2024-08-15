@@ -1,5 +1,5 @@
 use gateconvert::cnf;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 fn to_cnf_helper(circuit: Circuit<usize>) -> Result<String, String> {
     let mut out = vec![];

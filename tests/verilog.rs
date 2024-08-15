@@ -1,5 +1,5 @@
 use gateconvert::verilog;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 fn to_verilog_helper(circuit: Circuit<usize>, optimize_negs: bool) -> String {
     let mut out = vec![];

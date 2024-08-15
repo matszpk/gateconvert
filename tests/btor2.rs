@@ -1,5 +1,5 @@
 use gateconvert::btor2;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 fn to_btor2_helper(circuit: Circuit<usize>, state_len: usize) -> String {
     let mut out = vec![];

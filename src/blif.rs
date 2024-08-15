@@ -2012,7 +2012,7 @@ x1 1
 
     #[test]
     fn test_gen_model_circuit() {
-        use gatesim::Gate;
+        use crate::gatesim::Gate;
         use CircuitMapping::*;
         assert_eq!(
             Ok(CircuitData {

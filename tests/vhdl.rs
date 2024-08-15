@@ -1,5 +1,5 @@
 use gateconvert::vhdl;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 fn to_vhdl_helper(circuit: Circuit<usize>, optimize_negs: bool) -> String {
     let mut out = vec![];

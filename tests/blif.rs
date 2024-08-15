@@ -1,6 +1,6 @@
 use gateconvert::blif;
 use gateconvert::AssignEntry;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 use std::fs;
 

@@ -1,6 +1,6 @@
 use gateconvert::aiger;
 use gateconvert::AssignEntry;
-use gatesim::*;
+use gateutil::gatesim::*;
 
 fn to_aiger_ascii_helper(circuit: Circuit<usize>, state_len: usize) -> String {
     let mut out = vec![];
