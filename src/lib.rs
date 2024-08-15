@@ -16,6 +16,10 @@ pub mod verilog;
 pub mod vhdl;
 mod xor_table;
 
+pub use gategen;
+pub use gateutil;
+pub use gateutil::gatesim;
+
 use std::fmt::{self, Debug, Display};
 
 pub fn map_to_string<T: ToString>(map: &[Option<T>]) -> String {

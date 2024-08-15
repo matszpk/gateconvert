@@ -7,7 +7,6 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-gatesim = { version="0.1.0", path="../gatesim" }
 gateutil = { version="0.1.0", path="../gateutil" }
 gategen = { version="0.1.0", path="../gategen" }
 static_init = "1.0"

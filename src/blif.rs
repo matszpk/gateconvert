@@ -1,7 +1,7 @@
+use crate::gatesim::*;
 use crate::AssignEntry;
 use gategen::boolvar::*;
 use gategen::dynintvar::*;
-use gatesim::*;
 use gateutil::{reverse_trans, translate_inputs, translate_outputs};
 
 use crate::blif_pla::*;

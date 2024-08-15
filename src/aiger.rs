@@ -1,7 +1,7 @@
+use crate::gatesim::*;
 use flussab::DeferredWriter;
 use flussab_aiger::aig::*;
 use flussab_aiger::*;
-use gatesim::*;
 
 use std::collections::HashMap;
 use std::fmt::Debug;

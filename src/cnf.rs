@@ -1,6 +1,6 @@
+use crate::gatesim::*;
 use cnfgen::writer::{CNFError, CNFWriter};
 use flussab_cnf::cnf;
-use gatesim::*;
 use std::io::{Read, Write};
 
 fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {

@@ -1,4 +1,4 @@
-use gatesim::*;
+use crate::gatesim::*;
 
 use std::collections::HashMap;
 use std::io::{self, BufWriter, Write};

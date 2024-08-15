@@ -1,9 +1,9 @@
 // xor table
 
+use crate::gatesim::*;
 use gategen::boolexpr::*;
 use gategen::dynintexpr::*;
 use gategen::VarLit;
-use gatesim::*;
 
 use std::cell::RefCell;
 use std::fmt::Debug;
