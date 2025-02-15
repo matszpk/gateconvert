@@ -1,3 +1,8 @@
+// aiger.rs - AIGER conversion module
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+//! Module to conversion between Gate circuit and AIGER logic format.
+
 use crate::gatesim::*;
 use flussab::DeferredWriter;
 use flussab_aiger::aig::*;
@@ -9,6 +14,16 @@ use std::io::{self, Read, Write};
 
 use crate::AssignEntry;
 
+/// Converts circuit to AIGER format.
+///
+/// Function writes Gate circuit logic in AIGER format to `out`. The `circuit` is circuit
+/// to convert. The `state_len` is state length that represents in AIGER as latches.
+///
+/// The circuit inputs are organized in form: `[state,inputs]`.
+/// The circuit outputs are organized in form: `[state,outputs]`.
+///
+/// The `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
+/// otherwise textual mode.
 pub fn to_aiger(
     circuit: &Circuit<usize>,
     state_len: usize,
@@ -106,16 +121,22 @@ pub fn to_aiger(
     }
 }
 
+/// AIGER error enumeration.
 #[derive(thiserror::Error, Debug)]
 pub enum AIGERError {
+    /// If parse error.
     #[error("AIGER parse error {0}")]
     ParseError(#[from] ParseError),
+    /// If encountered cycle in AIGER logic.
     #[error("Cycles in AIGER")]
     CyclesInAIGER,
+    /// If gate have wrong output.
     #[error("AndGate bad output")]
     AndGateBadOutput,
+    /// If latch have bad state.
     #[error("Latch bad state")]
     LatchBadState,
+    /// If bad input.
     #[error("Bad input")]
     BadInput,
 }
@@ -371,6 +392,14 @@ fn from_aiger_int(
 
 // return: circuit, map for AIGER variables (input, latches and output)
 // format of AIGER map: (AIGER literal, AIGER Entry)
+
+/// Converts AIGER logic to Gate circuit.
+///
+/// The `input` is read stream with AIGER logic. Function returns Gate circuit with its mapping.
+/// Mapping in form: key - original variable in AIGER logic, value - assignment in circuit.
+///
+/// The `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
+/// otherwise textual mode.
 pub fn from_aiger(
     input: impl Read,
     binmode: bool,

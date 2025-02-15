@@ -1,7 +1,14 @@
 [package]
 name = "gateconvert"
+authors = ["Mateusz Szpakowski"]
+license = "Apache-2.0"
 version = "0.1.0"
 edition = "2021"
+description = "The library to convert Gate circuit from/to foreign logic format."
+repository = "https://github.com/matszpk/gateconvert"
+documentation = "https://docs.rs/gateconvert"
+keywords = ["gate", "logic", "circuit"]
+categories = ["science", "mathematics"]
 
 [lib]
 path = "src/lib.rs"
@@ -10,8 +17,12 @@ path = "src/lib.rs"
 gateutil = { version="0.1.0", path="../gateutil" }
 gategen = { version="0.1.0", path="../gategen" }
 static_init = "1.0"
-cnfgen = "0.4.0"
+cnfgen = "0.6.0"
 flussab-cnf = "0.3"
 flussab-aiger = "0.1"
 flussab = "0.3.1"
 thiserror = "1.0"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

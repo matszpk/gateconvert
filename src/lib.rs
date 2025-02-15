@@ -1,7 +1,24 @@
+// lib.rs - main code
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+//! The library allow to easily convert Gate circuit from/to one of few foreign formats.
+//! This library is used by `gateconvert_exec` program that allow conversion by command line
+//! interface.
+//!
+//! A conversion to foreign logic format writes result data into output (by `Write` trait).
+//! A conversion from foreign logic format returns Gate circuit object and sometimes
+//! additional mapping. Any functions that make conversion returns Result to allow handle
+//! various errors.
+
+/// Utility to mark negation
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum VNegs {
+    /// If no negations.
     NoNegs,
-    NegInput1, // second input in gate
+    /// Second (starting from 0) argument will be negated.
+    // second input in gate
+    NegInput1,
+    /// Output will be negated.
     NegOutput,
 }
 
@@ -22,6 +39,10 @@ pub use gateutil::gatesim;
 
 use std::fmt::{self, Debug, Display};
 
+/// Generate output string from mapping. The `T` must be convertible to string.
+///
+/// This function simplify generation of map file. Mapping in form:
+/// index - original variable index, value - index of circuit inputs.
 pub fn map_to_string<T: ToString>(map: &[Option<T>]) -> String {
     let mut out = String::new();
     for t in map {
@@ -35,11 +56,15 @@ pub fn map_to_string<T: ToString>(map: &[Option<T>]) -> String {
     out
 }
 
+/// Entry of assignment for mapping.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AssignEntry {
-    NoMap,            // no mapping
-    Value(bool),      // boolean value
-    Var(usize, bool), // (circuit wire index, negation)
+    /// No mapping.
+    NoMap,
+    /// Boolean value set for variable.
+    Value(bool),
+    /// Circuit wire index and its negation.
+    Var(usize, bool),
 }
 
 impl Display for AssignEntry {
@@ -52,6 +77,10 @@ impl Display for AssignEntry {
     }
 }
 
+/// Generate output string from mapping.
+///
+/// This function simplify generation of map file. Mapping in form:
+/// key - original variable index, value - asisgnment to circuit.
 pub fn assign_map_to_string(map: &[(usize, AssignEntry)]) -> String {
     let mut out = String::new();
     for (i, t) in map {
@@ -63,6 +92,10 @@ pub fn assign_map_to_string(map: &[(usize, AssignEntry)]) -> String {
     out
 }
 
+/// Generate output string from mapping.
+///
+/// This function simplify generation of map file. Mapping in form:
+/// key - original variable name, value - asisgnment to circuit.
 pub fn string_assign_map_to_string(map: &[(String, AssignEntry)]) -> String {
     let mut out = String::new();
     for (k, t) in map {
