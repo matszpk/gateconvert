@@ -16,13 +16,13 @@ use crate::AssignEntry;
 
 /// Converts circuit to AIGER format.
 ///
-/// Function writes Gate circuit logic in AIGER format to `out`. The `circuit` is circuit
-/// to convert. The `state_len` is state length that represents in AIGER as latches.
+/// Function writes Gate circuit logic in AIGER format to `out`. A `circuit` is circuit
+/// to convert. A `state_len` is state length that represents in AIGER as latches.
 ///
 /// The circuit inputs are organized in form: `[state,inputs]`.
 /// The circuit outputs are organized in form: `[state,outputs]`.
 ///
-/// The `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
+/// A `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
 /// otherwise textual mode.
 pub fn to_aiger(
     circuit: &Circuit<usize>,
@@ -395,10 +395,10 @@ fn from_aiger_int(
 
 /// Converts AIGER logic to Gate circuit.
 ///
-/// The `input` is read stream with AIGER logic. Function returns Gate circuit with its mapping.
+/// An `input` is read stream with AIGER logic. Function returns Gate circuit with its mapping.
 /// Mapping in form: key - original variable in AIGER logic, value - assignment in circuit.
 ///
-/// The `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
+/// A `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
 /// otherwise textual mode.
 pub fn from_aiger(
     input: impl Read,
