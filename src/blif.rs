@@ -1,3 +1,6 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+//! Module to conversion between Gate circuit and BLIF logic format.
+
 use crate::gatesim::*;
 use crate::AssignEntry;
 use gategen::boolvar::*;

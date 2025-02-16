@@ -1,3 +1,6 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+//! Module to conversion between Gate circuit and the Verilog language.
+
 use crate::gatesim::*;
 
 use std::collections::BTreeMap;
