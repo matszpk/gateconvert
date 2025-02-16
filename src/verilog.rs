@@ -7,6 +7,11 @@ use crate::vbinopcircuit::*;
 use crate::vcircuit::VGateFunc;
 use crate::VNegs::*;
 
+/// Converts circuit to Verilog language source.
+///
+/// Function writes Gate circuit logic in Verilog language to `out`. `circuit` is circuit
+/// to convert. `module_name` is name of top module. `optimize_negs` determines whether
+/// optimize negations while conversion (if true) or not (if false).
 pub fn to_verilog(
     circuit: Circuit<usize>,
     module_name: &str,

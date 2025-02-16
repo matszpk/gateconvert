@@ -5,6 +5,13 @@ use std::io::{self, BufWriter, Write};
 
 use crate::vcircuit::*;
 
+/// Converts circuit to BTOR2 format.
+///
+/// Function writes Gate circuit logic in BTOR2 format to `out`. `circuit` is circuit
+/// to convert. `state_len` is length of state.
+///
+/// The circuit's inputs are organized in form: `[state,inputs]`.
+/// The circuit's outputs are organized in form: `[state,outputs]`.
 pub fn to_btor2(circuit: Circuit<usize>, state_len: usize, out: impl Write) -> io::Result<()> {
     let input_len = circuit.input_len();
     let output_len = circuit.outputs().len();

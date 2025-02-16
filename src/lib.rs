@@ -1,7 +1,7 @@
 // lib.rs - main code
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! The library allow to easily convert Gate circuit from/to one of few foreign formats.
+//! The library allows to easily convert Gate circuit from/to one of few foreign formats.
 //! This library is used by `gateconvert_exec` program that allow conversion by command line
 //! interface.
 //!

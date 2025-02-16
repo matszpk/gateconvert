@@ -12,6 +12,15 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::path::Path;
 
+/// Converts circuit to BLIF format.
+///
+/// Function writes Gate circuit logic in BLIF format to `out`. `circuit` is circuit
+/// to convert. `state_len` is length of state that represents in BLIF as latches.
+/// `clock_num` is number of clocks in BLIF logic. `model_name` is name of top logic
+/// circuit in BLIF format.
+///
+/// The circuit's inputs are organized in form: `[state,clocks,inputs]`.
+/// The circuit's outputs are organized in form: `[state,outputs]`.
 pub fn to_blif(
     circuit: &Circuit<usize>,
     state_len: usize,
@@ -1347,6 +1356,11 @@ fn resolve_model(top_name: &str, model_map: &mut ModelMap) -> Result<(), BLIFErr
     Ok(())
 }
 
+/// Converts logic in BLIF from to Gate circuit.
+///
+/// Argument is path to file with logic in BLIF format. Function returns Gate circuit with its
+/// mapping. Mapping in form: key - original variable in AIGER logic,
+/// value - assignment in circuit.
 pub fn from_blif<P: AsRef<Path> + Debug>(
     path: P,
 ) -> Result<(Circuit<usize>, Vec<(String, AssignEntry)>), BLIFError> {

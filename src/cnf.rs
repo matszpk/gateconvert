@@ -36,12 +36,15 @@ fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFE
     formula.write(&mut CNFWriter::new(out))
 }
 
+/// Converts Gate circuit to DIMACS CNF (Conjuctive Normal Form) format.
+///
+/// `circuit` is circuit to convert. `out` is an output stream.
 pub fn to_cnf(circuit: &Circuit<usize>, mut out: impl Write) -> Result<(), CNFError> {
     use cnfgen::boolvar::*;
     callsys(|| to_cnf_int(circuit, &mut out))
 }
 
-pub fn from_cnf_int(
+fn from_cnf_int(
     parser: &mut cnf::Parser<isize>,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
     use gategen::boolvar::*;
@@ -76,6 +79,11 @@ pub fn from_cnf_int(
     Ok(clauses.to_translated_circuit_with_map(vars.into_iter()))
 }
 
+/// Converts DIMACS CNF (Conjuctive Normal Form) logic to Gate circuit.
+///
+/// `input` is stream with logic in DIMACS CNF format. Function returns Gate circuit with
+/// its mapping. Mapping in form: index - original variable in CNF logic (starts from 0),
+/// value - circuit wire index.
 pub fn from_cnf(
     input: impl Read,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
