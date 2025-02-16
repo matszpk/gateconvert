@@ -1,5 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! Module to conversion between Gate circuit and BLIF logic format.
+//! Module to conversion between Gate circuit and the BLIF logic format.
 
 use crate::gatesim::*;
 use crate::AssignEntry;

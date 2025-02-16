@@ -1,5 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! Module to conversion between Gate circuit and BTOR2 logic format.
+//! Module to conversion between Gate circuit and the BTOR2 logic format.
 
 use crate::gatesim::*;
 

@@ -1,5 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! Module to conversion between Gate circuit and DIMACS CNF (Conjuctive Normal Form) format.
+//! Module to conversion between Gate circuit and the DIMACS CNF (Conjuctive Normal Form) format.
 
 use crate::gatesim::*;
 use cnfgen::writer::{CNFError, CNFWriter};

@@ -1,7 +1,7 @@
 // aiger.rs - AIGER conversion module
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! Module to conversion between Gate circuit and AIGER logic format.
+//! Module to conversion between Gate circuit and the AIGER logic format.
 
 use crate::gatesim::*;
 use flussab::DeferredWriter;
