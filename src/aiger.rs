@@ -19,8 +19,8 @@ use crate::AssignEntry;
 /// Function writes Gate circuit logic in AIGER format to `out`. `circuit` is circuit
 /// to convert. `state_len` is length of state that represents in AIGER as latches.
 ///
-/// The circuit's inputs are organized in form: `[state,inputs]`.
-/// The circuit's outputs are organized in form: `[state,outputs]`.
+/// The circuit inputs are organized in form: `[state,inputs]`.
+/// The circuit outputs are organized in form: `[state,outputs]`.
 ///
 /// `binmode` sets mode used while writing to AIGER mode - if true then use binary mode,
 /// otherwise textual mode.

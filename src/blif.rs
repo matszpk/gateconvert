@@ -22,8 +22,8 @@ use std::path::Path;
 /// `clock_num` is number of clocks in BLIF logic. `model_name` is name of top logic
 /// circuit in BLIF format.
 ///
-/// The circuit's inputs are organized in form: `[state,clocks,inputs]`.
-/// The circuit's outputs are organized in form: `[state,outputs]`.
+/// The circuit inputs are organized in form: `[state,clocks,inputs]`.
+/// The circuit outputs are organized in form: `[state,outputs]`.
 pub fn to_blif(
     circuit: &Circuit<usize>,
     state_len: usize,
