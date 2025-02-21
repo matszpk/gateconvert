@@ -14,8 +14,8 @@ categories = ["science", "mathematics"]
 path = "src/lib.rs"
 
 [dependencies]
-gateutil = { version="0.1.0", path="../gateutil" }
-gategen = { version="0.1.0", path="../gategen" }
+gateutil = "0.1.0"
+gategen = "0.1.0"
 static_init = "1.0"
 cnfgen = "0.6.0"
 flussab-cnf = "0.3"
