@@ -2,7 +2,7 @@
 name = "gateconvert"
 authors = ["Mateusz Szpakowski"]
 license = "Apache-2.0"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "The library to convert Gate circuit from/to foreign logic format."
 repository = "https://github.com/matszpk/gateconvert"
@@ -15,7 +15,7 @@ path = "src/lib.rs"
 
 [dependencies]
 gateutil = "0.1.0"
-gategen = "0.1.0"
+gategen = "0.2.0"
 static_init = "1.0"
 cnfgen = "0.6.0"
 flussab-cnf = "0.3"
