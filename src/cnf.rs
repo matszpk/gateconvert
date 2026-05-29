@@ -2,12 +2,12 @@
 //! Module to conversion between Gate circuit and the DIMACS CNF (Conjuctive Normal Form) format.
 
 use crate::gatesim::*;
-use cnfgen::writer::{CNFError, CNFWriter};
+use cnfgen2::writer::{CNFError, CNFWriter};
 use flussab_cnf::cnf;
 use std::io::{Read, Write};
 
 fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFError> {
-    use cnfgen::boolvar::*;
+    use cnfgen2::boolvar::*;
     assert_eq!(circuit.outputs().len(), 1);
     let mut out_exprs = (0..circuit.input_len())
         .map(|_| BoolVarSys::var())
@@ -43,14 +43,14 @@ fn to_cnf_int(circuit: &Circuit<usize>, out: &mut impl Write) -> Result<(), CNFE
 ///
 /// `circuit` is circuit to convert. `out` is an output stream.
 pub fn to_cnf(circuit: &Circuit<usize>, mut out: impl Write) -> Result<(), CNFError> {
-    use cnfgen::boolvar::*;
+    use cnfgen2::boolvar::*;
     callsys(|| to_cnf_int(circuit, &mut out))
 }
 
 fn from_cnf_int(
     parser: &mut cnf::Parser<isize>,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
-    use gategen::boolvar::*;
+    use gategen2::boolvar::*;
     let hdr = parser.header().unwrap();
     let vars = (0..hdr.var_count)
         .map(|_| BoolVarSys::var())
@@ -90,7 +90,7 @@ fn from_cnf_int(
 pub fn from_cnf(
     input: impl Read,
 ) -> Result<(Circuit<usize>, Vec<Option<usize>>), flussab_cnf::ParseError> {
-    use gategen::boolvar::*;
+    use gategen2::boolvar::*;
     let mut parser = cnf::Parser::<isize>::from_read(input, cnf::Config::default())?;
     callsys(|| from_cnf_int(&mut parser))
 }

@@ -33,7 +33,7 @@ pub mod verilog;
 pub mod vhdl;
 mod xor_table;
 
-pub use gategen;
+pub use gategen2;
 pub use gateutil;
 pub use gateutil::gatesim;
 

@@ -1,7 +1,7 @@
 use crate::gatesim::*;
 use crate::xor_table::*;
-use gategen::boolvar::*;
-use gategen::dynintvar::*;
+use gategen2::boolvar::*;
+use gategen2::dynintvar::*;
 use static_init::dynamic;
 use std::collections::HashMap;
 

@@ -144,8 +144,8 @@ pub enum AIGERError {
 fn from_aiger_int(
     aig: &Aig<usize>,
 ) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), AIGERError> {
-    use gategen::boolvar::*;
-    use gategen::dynintvar::*;
+    use gategen2::boolvar::*;
+    use gategen2::dynintvar::*;
     let state_len = aig.latches.len();
     let all_input_len = aig.inputs.len() + aig.latches.len();
     // exprs - input and latches initialized, rest is empty - initialized by false
@@ -404,7 +404,7 @@ pub fn from_aiger(
     input: impl Read,
     binmode: bool,
 ) -> Result<(Circuit<usize>, Vec<(usize, AssignEntry)>), AIGERError> {
-    use gategen::boolvar::*;
+    use gategen2::boolvar::*;
     let aig = if binmode {
         let parser = binary::Parser::<usize>::from_read(input, binary::Config::default())?;
         parser.parse()?.into()
